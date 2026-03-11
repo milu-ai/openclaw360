@@ -17,6 +17,7 @@ from openclaw360.models import (
 
 # Built-in sensitive data detection patterns
 SENSITIVE_PATTERNS: dict[SensitiveDataType, list[str]] = {
+    # --- Technical secrets ---
     SensitiveDataType.API_KEY: [
         r"(?:api[_-]?key|apikey)\s*[:=]\s*['\"]?([A-Za-z0-9_\-]{20,})['\"]?",
         r"\b(sk-[A-Za-z0-9]{32,})\b",  # OpenAI format
@@ -35,6 +36,7 @@ SENSITIVE_PATTERNS: dict[SensitiveDataType, list[str]] = {
     SensitiveDataType.PRIVATE_KEY: [
         r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
     ],
+    # --- Personal information (PIPL) ---
     SensitiveDataType.CREDIT_CARD: [
         r"\b([3-6]\d{12,18})\b",  # 13-19 digit sequences starting with 3,4,5,6
     ],
@@ -43,6 +45,32 @@ SENSITIVE_PATTERNS: dict[SensitiveDataType, list[str]] = {
     ],
     SensitiveDataType.IP_ADDRESS: [
         r"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b",
+    ],
+    SensitiveDataType.PHONE_NUMBER: [
+        # Chinese mobile: 1[3-9]X XXXX XXXX (with optional +86/86 prefix)
+        r"(?:\+?86[-\s]?)?(\b1[3-9]\d{9})\b",
+        # International format: +CC XXXXXXXXXX (7-15 digits after country code)
+        r"(\+\d{1,3}[-\s]?\d{7,14})\b",
+    ],
+    SensitiveDataType.ID_CARD: [
+        # Chinese national ID: 18 digits (last may be X)
+        r"\b([1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx])\b",
+    ],
+    SensitiveDataType.PASSPORT: [
+        # Chinese passport: E/G/D/S/P/H + 8 digits, or older W + 8 digits
+        r"\b([EeGgDdSsPpHhWw]\d{8})\b",
+        # Common international: 2 letters + 7 digits or 1 letter + 8 digits
+        r"(?:passport|护照)\s*[:=：]\s*['\"]?([A-Z]{1,2}\d{7,8})['\"]?",
+    ],
+    SensitiveDataType.BANK_ACCOUNT: [
+        # Chinese bank card: 16-19 digits starting with 62 (UnionPay)
+        r"\b(62\d{14,17})\b",
+    ],
+    SensitiveDataType.ADDRESS: [
+        # Chinese address: province + city + district + street pattern
+        r"([\u4e00-\u9fa5]{2,}(?:省|自治区|市)[\u4e00-\u9fa5]{2,}(?:市|区|县|镇)[\u4e00-\u9fa5]{2,}(?:路|街|道|巷|弄|号|栋|楼|室|村)[\u4e00-\u9fa5\d]*)",
+        # Labeled address
+        r"(?:地址|住址|address)\s*[:=：]\s*['\"]?(.{10,60}?)['\"]?(?:\s|$)",
     ],
 }
 
@@ -81,6 +109,24 @@ def _is_valid_ip(ip: str) -> bool:
         except ValueError:
             return False
     return True
+
+
+def _is_valid_id_card(id_number: str) -> bool:
+    """Validate a Chinese 18-digit ID card number using the checksum algorithm.
+
+    The last digit is a check digit computed from the first 17 digits using
+    ISO 7064:1983 MOD 11-2.
+    """
+    if len(id_number) != 18:
+        return False
+    weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+    check_chars = "10X98765432"
+    try:
+        total = sum(int(id_number[i]) * weights[i] for i in range(17))
+    except ValueError:
+        return False
+    expected = check_chars[total % 11]
+    return id_number[-1].upper() == expected
 
 
 def _mask_value(raw_value: str) -> str:
@@ -132,6 +178,11 @@ class DLPEngine:
                     # IP address filtering: skip private/loopback
                     if data_type == SensitiveDataType.IP_ADDRESS:
                         if not _is_valid_ip(raw_value) or _is_private_ip(raw_value):
+                            continue
+
+                    # ID card checksum validation: skip invalid checksums
+                    if data_type == SensitiveDataType.ID_CARD:
+                        if not _is_valid_id_card(raw_value):
                             continue
 
                     # Zero Knowledge: only store SHA-256 hash

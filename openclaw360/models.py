@@ -45,16 +45,29 @@ class ThreatDetection:
 
 
 class SensitiveDataType(Enum):
-    """Types of sensitive data detected by DLP."""
+    """Types of sensitive data detected by DLP.
 
+    Covers technical secrets (API keys, tokens, SSH keys) and personal
+    information categories required by China's Personal Information
+    Protection Law (PIPL / 个人信息保护法).
+    """
+
+    # --- Technical secrets ---
     API_KEY = "api_key"
     PASSWORD = "password"
     TOKEN = "token"
     SSH_KEY = "ssh_key"
     PRIVATE_KEY = "private_key"
+
+    # --- Personal information (PIPL) ---
     CREDIT_CARD = "credit_card"
     EMAIL = "email"
     IP_ADDRESS = "ip_address"
+    PHONE_NUMBER = "phone_number"
+    ID_CARD = "id_card"              # 身份证号
+    PASSPORT = "passport"            # 护照号
+    BANK_ACCOUNT = "bank_account"    # 银行卡号
+    ADDRESS = "address"              # 物理地址
 
 
 @dataclass

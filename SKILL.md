@@ -1,7 +1,7 @@
 ---
 name: openclaw360
 description: Runtime security skill for AI agents — prompt injection detection, tool call authorization, sensitive data leak prevention, and skill security scanning
-version: 0.1.3
+version: 0.1.4
 homepage: https://github.com/milu-ai/openclaw360
 metadata:
   clawdbot:

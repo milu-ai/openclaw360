@@ -10,7 +10,7 @@ from openclaw360.models import (
 )
 from openclaw360.skill import OpenClaw360Skill
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
 __all__ = [
     "OpenClaw360Skill",

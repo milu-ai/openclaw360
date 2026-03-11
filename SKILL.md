@@ -1,7 +1,7 @@
 ---
 name: openclaw360
 description: Runtime security skill for AI agents — prompt injection detection, tool call authorization, sensitive data leak prevention, and skill security scanning
-version: 0.1.2
+version: 0.1.3
 homepage: https://github.com/milu-ai/openclaw360
 metadata:
   clawdbot:
@@ -125,7 +125,7 @@ python3 -m venv ~/.openclaw360-venv
 openclaw360 --help
 ```
 
-确认输出包含 `openclaw360` 和版本号 `0.1.2`。如果版本不匹配，说明安装了错误的版本，需要卸载重装。
+确认输出包含 `openclaw360` 和版本号 `0.1.3`。如果版本不匹配，说明安装了错误的版本，需要卸载重装。
 
 ### 使用命令
 

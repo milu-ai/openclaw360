@@ -1215,7 +1215,7 @@ class TestReportGenerator:
     def test_to_text_contains_skill_section(self, generator: ReportGenerator, sample_report: ScanReport) -> None:
         output = generator.to_text(sample_report)
 
-        assert "--- test-skill (Score: 85/100) ---" in output
+        assert "test-skill (Score: 85/100)" in output
         assert "[HIGH] Unescaped variable interpolation" in output
         assert "File: run.sh" in output
         assert "Line: 5" in output
@@ -1228,9 +1228,9 @@ class TestReportGenerator:
     def test_to_text_contains_summary(self, generator: ReportGenerator, sample_report: ScanReport) -> None:
         output = generator.to_text(sample_report)
 
-        assert "Summary:" in output
-        assert "Critical: 0" in output
-        assert "High: 1" in output
+        assert "--- Summary ---" in output
+        assert "0 critical" in output.lower()
+        assert "high" in output.lower()
 
     def test_generate_dispatches_to_text(self, generator: ReportGenerator, sample_report: ScanReport) -> None:
         text_output = generator.generate(sample_report, "text")

@@ -235,6 +235,136 @@ def cmd_scan_skills(args: argparse.Namespace) -> int:
         print(f"Error during skill scan: {exc}", file=sys.stderr)
         return 1
 
+def cmd_check_prompt(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 check-prompt`` — check if a prompt is safe."""
+    try:
+        config = _load_config(args.config)
+
+        from openclaw360.skill import OpenClaw360Skill
+
+        guard = OpenClaw360Skill(config)
+        source = args.source or "user"
+        result = guard.on_prompt(args.text, {"source": source})
+
+        output = {
+            "text": args.text,
+            "source": source,
+            "decision": result.decision.value,
+            "risk_score": round(result.risk_score, 4),
+            "threats": result.threats,
+            "reason": result.reason,
+            "metadata": result.metadata,
+        }
+
+        if args.format == "json":
+            print(json.dumps(output, ensure_ascii=False, indent=2))
+        else:
+            icon = "🚫" if result.decision.value == "block" else ("⚠️" if result.decision.value == "confirm" else "✅")
+            print(f"{icon} Decision: {result.decision.value.upper()}")
+            print(f"   Risk Score: {result.risk_score:.4f}")
+            if result.threats:
+                print(f"   Threats: {', '.join(result.threats)}")
+            if result.reason:
+                print(f"   Reason: {result.reason}")
+            if result.metadata:
+                for k, v in result.metadata.items():
+                    print(f"   {k}: {v}")
+
+        return 0
+
+    except Exception as exc:
+        print(f"Error checking prompt: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_check_tool(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 check-tool`` — check if a tool call is safe."""
+    try:
+        config = _load_config(args.config)
+
+        from openclaw360.skill import OpenClaw360Skill
+
+        guard = OpenClaw360Skill(config)
+
+        # Parse params as key=value pairs into a dict
+        params: dict = {}
+        if args.params:
+            for p in args.params:
+                if "=" in p:
+                    k, v = p.split("=", 1)
+                    params[k] = v
+                else:
+                    params["arg"] = p
+
+        result = guard.on_tool_call(args.tool_name, params)
+
+        output = {
+            "tool": args.tool_name,
+            "params": params,
+            "decision": result.decision.value,
+            "risk_score": round(result.risk_score, 4),
+            "threats": result.threats,
+            "reason": result.reason,
+            "metadata": result.metadata,
+        }
+
+        if args.format == "json":
+            print(json.dumps(output, ensure_ascii=False, indent=2))
+        else:
+            icon = "🚫" if result.decision.value == "block" else ("⚠️" if result.decision.value == "confirm" else "✅")
+            print(f"{icon} Decision: {result.decision.value.upper()}")
+            print(f"   Tool: {args.tool_name}")
+            print(f"   Risk Score: {result.risk_score:.4f}")
+            if result.threats:
+                print(f"   Threats: {', '.join(result.threats)}")
+
+        return 0
+
+    except Exception as exc:
+        print(f"Error checking tool call: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_check_output(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 check-output`` — check if output leaks sensitive data."""
+    try:
+        config = _load_config(args.config)
+
+        from openclaw360.skill import OpenClaw360Skill
+
+        guard = OpenClaw360Skill(config)
+        result = guard.on_output(args.text)
+
+        output = {
+            "text": args.text[:100] + ("..." if len(args.text) > 100 else ""),
+            "decision": result.decision.value,
+            "risk_score": round(result.risk_score, 4),
+            "threats": result.threats,
+            "reason": result.reason,
+            "metadata": result.metadata,
+        }
+
+        if args.format == "json":
+            print(json.dumps(output, ensure_ascii=False, indent=2))
+        else:
+            icon = "🚫" if result.decision.value == "block" else "✅"
+            print(f"{icon} Decision: {result.decision.value.upper()}")
+            print(f"   Risk Score: {result.risk_score:.4f}")
+            if result.threats:
+                print(f"   Threats: {', '.join(result.threats)}")
+            if result.reason:
+                print(f"   Reason: {result.reason}")
+            if result.metadata:
+                for k, v in result.metadata.items():
+                    print(f"   {k}: {v}")
+
+        return 0
+
+    except Exception as exc:
+        print(f"Error checking output: {exc}", file=sys.stderr)
+        return 1
+
+
 
 
 # ------------------------------------------------------------------
@@ -285,6 +415,23 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format (default: text)")
     scan_parser.add_argument("--min-score", type=int, default=None, help="Only report Skills with score below this value")
 
+    # check-prompt
+    cp_parser = subparsers.add_parser("check-prompt", help="Check if a prompt is safe (injection detection)")
+    cp_parser.add_argument("text", help="The prompt text to check")
+    cp_parser.add_argument("--source", default="user", choices=["user", "web", "document", "screen"], help="Input source (affects risk weight)")
+    cp_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
+
+    # check-tool
+    ct_parser = subparsers.add_parser("check-tool", help="Check if a tool call is safe")
+    ct_parser.add_argument("tool_name", help="Tool name (e.g., shell_execute, file_write)")
+    ct_parser.add_argument("params", nargs="*", help="Tool parameters as key=value pairs (e.g., command='rm -rf /')")
+    ct_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
+
+    # check-output
+    co_parser = subparsers.add_parser("check-output", help="Check if output leaks sensitive data (DLP)")
+    co_parser.add_argument("text", help="The output text to check")
+    co_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
+
     return parser
 
 
@@ -310,6 +457,9 @@ def main(argv: list[str] | None = None) -> int:
         "update": cmd_update,
         "rollback": cmd_rollback,
         "scan-skills": cmd_scan_skills,
+        "check-prompt": cmd_check_prompt,
+        "check-tool": cmd_check_tool,
+        "check-output": cmd_check_output,
     }
 
     handler = handlers.get(args.command)

@@ -709,7 +709,10 @@ class ScoreCalculator:
     """Security score calculator.
 
     Computes per-Skill security scores and overall scores based on
-    the severity of findings.
+    the severity of findings.  Context-aware: missing security sections
+    receive heavier penalties when the Skill actually uses the
+    corresponding capability (e.g. missing "Network Access" section
+    when network calls are detected).
     """
 
     SEVERITY_WEIGHTS: dict[str, int] = {
@@ -720,10 +723,20 @@ class ScoreCalculator:
         "info": 0,
     }
 
+    # Categories that indicate the Skill uses network
+    _NETWORK_CATEGORIES: set[str] = {"network_risk", "data_exfiltration"}
+
     def calculate(self, findings: list[ScanFinding]) -> int:
         """Calculate a single Skill's security score.
 
-        Score = max(0, 100 - sum(weights)).  Range is [0, 100].
+        Score = max(0, 100 - sum(deductions)).  Range is [0, 100].
+
+        Context-aware adjustments:
+        - Missing "Network Access" section is upgraded from LOW (3) to
+          MEDIUM (8) when the Skill has network-related findings.
+        - Missing "Data Handling" section is upgraded from LOW (3) to
+          MEDIUM (8) when the Skill has credential or data exfiltration
+          findings.
 
         Args:
             findings: List of ScanFinding instances.
@@ -731,10 +744,31 @@ class ScoreCalculator:
         Returns:
             Integer security score between 0 and 100.
         """
-        total_deduction = sum(
-            self.SEVERITY_WEIGHTS.get(f.severity.value, 0)
+        has_network_findings = any(
+            f.category.value in self._NETWORK_CATEGORIES for f in findings
+        )
+        has_data_findings = any(
+            f.category.value in ("hardcoded_credential", "data_exfiltration")
             for f in findings
         )
+
+        total_deduction = 0
+        for f in findings:
+            base = self.SEVERITY_WEIGHTS.get(f.severity.value, 0)
+
+            # Upgrade missing section penalties when relevant activity detected
+            if (
+                f.category == FindingCategory.MISSING_SECTION
+                and f.severity == FindingSeverity.LOW
+            ):
+                desc_lower = f.description.lower()
+                if "network access" in desc_lower and has_network_findings:
+                    base = self.SEVERITY_WEIGHTS["medium"]
+                elif "data handling" in desc_lower and has_data_findings:
+                    base = self.SEVERITY_WEIGHTS["medium"]
+
+            total_deduction += base
+
         return max(0, 100 - total_deduction)
 
     def calculate_overall(self, results: list[SkillScanResult]) -> float:
@@ -788,39 +822,70 @@ class ReportGenerator:
         raw = dataclasses.asdict(report)
         return json.dumps(raw, default=_convert, indent=2, ensure_ascii=False)
 
+    def _build_summary(self, report: ScanReport) -> list[str]:
+        """Build a concise summary section for the text report."""
+        lines: list[str] = []
+        stats = report.severity_stats
+
+        # Categorize skills by score
+        critical_skills = [r for r in report.results if r.score < 50]
+        warning_skills = [r for r in report.results if 50 <= r.score < 80]
+        good_skills = [r for r in report.results if r.score >= 80]
+
+        best = max(report.results, key=lambda r: r.score) if report.results else None
+        worst = min(report.results, key=lambda r: r.score) if report.results else None
+
+        lines.append("")
+        lines.append("--- Summary ---")
+        lines.append(f"  Score Distribution: {len(critical_skills)} critical (<50) | {len(warning_skills)} warning (50-79) | {len(good_skills)} good (>=80)")
+        if best:
+            lines.append(f"  Best:  {best.skill_name} ({best.score}/100)")
+        if worst and worst.skill_name != (best.skill_name if best else ""):
+            lines.append(f"  Worst: {worst.skill_name} ({worst.score}/100)")
+        lines.append(f"  Findings: {stats.critical} critical, {stats.high} high, {stats.medium} medium, {stats.low} low, {stats.info} info")
+
+        # Top issues quick list
+        if critical_skills:
+            lines.append("")
+            lines.append("  Skills needing immediate attention:")
+            for r in sorted(critical_skills, key=lambda x: x.score):
+                critical_findings = [f for f in r.findings if f.severity == FindingSeverity.CRITICAL]
+                desc = critical_findings[0].description if critical_findings else "multiple issues"
+                lines.append(f"    - {r.skill_name} ({r.score}/100): {desc}")
+
+        return lines
+
     def to_text(self, report: ScanReport) -> str:
-        """Format a ScanReport as human-readable text."""
+        """Format a ScanReport as human-readable text with summary."""
         lines: list[str] = []
         lines.append("=== Skill Security Scan Report ===")
         lines.append(f"Scan Time: {report.scan_time}")
         lines.append(f"Skills Scanned: {report.skill_count}")
-        lines.append(f"Overall Score: {report.overall_score}/100")
+        lines.append(f"Overall Score: {report.overall_score:.1f}/100")
 
+        # Add summary section
+        lines.extend(self._build_summary(report))
+
+        # Per-skill details
+        lines.append("")
+        lines.append("--- Details ---")
         for result in report.results:
             lines.append("")
-            lines.append(f"--- {result.skill_name} (Score: {result.score}/100) ---")
+            lines.append(f"  {result.skill_name} (Score: {result.score}/100)")
             if result.parse_error:
-                lines.append(f"  Parse Error: {result.parse_error}")
+                lines.append(f"    Parse Error: {result.parse_error}")
             for finding in result.findings:
                 severity_tag = finding.severity.value.upper()
-                lines.append(f"  [{severity_tag}] {finding.description}")
+                lines.append(f"    [{severity_tag}] {finding.description}")
                 if finding.file_path or finding.line_number is not None:
                     parts: list[str] = []
                     if finding.file_path:
                         parts.append(f"File: {finding.file_path}")
                     if finding.line_number is not None:
                         parts.append(f"Line: {finding.line_number}")
-                    lines.append(f"    {', '.join(parts)}")
+                    lines.append(f"      {', '.join(parts)}")
                 if finding.recommendation:
-                    lines.append(f"    Recommendation: {finding.recommendation}")
-
-        lines.append("")
-        lines.append("Summary:")
-        stats = report.severity_stats
-        lines.append(
-            f"  Critical: {stats.critical}, High: {stats.high}, "
-            f"Medium: {stats.medium}, Low: {stats.low}, Info: {stats.info}"
-        )
+                    lines.append(f"      Recommendation: {finding.recommendation}")
 
         return "\n".join(lines)
 

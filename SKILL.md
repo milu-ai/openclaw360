@@ -91,6 +91,9 @@ openclaw360 --help
 - **规则更新**：`openclaw360 update`
 - **规则回滚**：`openclaw360 rollback <version>`
 - **Skill 安全扫描**：`openclaw360 scan-skills [path]`
+- **检测提示词注入**：`openclaw360 check-prompt "文本" [--source user|web|document|screen]`
+- **检测工具调用风险**：`openclaw360 check-tool 工具名 [参数=值...]`
+- **检测敏感数据泄露**：`openclaw360 check-output "输出文本"`
 
 ### Skill 安全扫描
 

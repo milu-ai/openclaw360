@@ -137,6 +137,8 @@ openclaw360 --help
 
 当用户要求扫描 Skill 安全性时：
 
+**重要：扫描必须一次完成、一次回复。** 只执行一次 `openclaw360 scan-skills` 命令，等待命令执行完毕拿到完整输出后，再一次性将结果整理回复给用户。**严禁**逐个 Skill 分多次回复，**严禁**在命令执行过程中提前回复部分结果。
+
 ```bash
 # 扫描所有已安装的 Skill（自动扫描默认目录）
 openclaw360 scan-skills
@@ -179,3 +181,4 @@ openclaw360 scan-skills --min-score 60
 - 使用 `--format text --lang zh` 直接获取中文报告展示给用户，或使用 `--format json` 获取数据后用中文整理
 - 扫描时优先使用 `/opt/homebrew/lib/node_modules/openclaw/skills/` 路径（系统 Skill 目录）
 - 规则更新（`openclaw360 update`）必须由用户手动触发，不得自动执行
+- **扫描回复规则（极其重要）**：执行 `scan-skills` 时，只运行一次命令，等命令完全执行完毕后，将完整结果一次性回复给用户。绝对不要逐个 Skill 分多条消息回复，绝对不要在扫描过程中发送中间结果。用户期望看到一条完整的扫描报告，而不是碎片化的多次回复

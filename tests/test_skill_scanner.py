@@ -1410,3 +1410,91 @@ class TestSkillScanner:
         # Even if we break a checker, scan_single_skill should not raise
         result = scanner.scan_single_skill(skill_dir)
         assert result.skill_name == "test-skill"
+
+
+# ---------------------------------------------------------------------------
+# i18n / ReportGenerator language tests
+# ---------------------------------------------------------------------------
+
+
+class TestReportGeneratorI18n:
+    """Tests for ReportGenerator i18n support."""
+
+    def _make_report(self) -> "ScanReport":
+        from openclaw360.skill_scanner import ScanReport, SeverityStats, SkillScanResult, ScanFinding, FindingSeverity, FindingCategory, SecurityChecklist
+
+        findings = [
+            ScanFinding(
+                severity=FindingSeverity.CRITICAL,
+                category=FindingCategory.HARDCODED_CREDENTIAL,
+                description="Hardcoded email detected: user***.com",
+                file_path="SKILL.md",
+                line_number=5,
+                recommendation="Use environment variables or a secrets manager instead of hardcoding credentials.",
+            ),
+            ScanFinding(
+                severity=FindingSeverity.LOW,
+                category=FindingCategory.MISSING_SECTION,
+                description="Missing security section: Network Access",
+                file_path="SKILL.md",
+                recommendation="Add a 'Network Access' section to SKILL.md to document security considerations.",
+            ),
+        ]
+        result = SkillScanResult(
+            skill_name="test-skill",
+            skill_path="/tmp/test-skill",
+            score=72,
+            findings=findings,
+            checklist=SecurityChecklist(has_valid_frontmatter=True),
+        )
+        return ScanReport(
+            scan_time="2026-03-11T00:00:00+00:00",
+            skill_count=1,
+            results=[result],
+            overall_score=72.0,
+            severity_stats=SeverityStats(critical=1, low=1),
+        )
+
+    def test_text_report_default_english(self) -> None:
+        report = self._make_report()
+        gen = ReportGenerator()
+        text = gen.to_text(report)
+        assert "=== Skill Security Scan Report ===" in text
+        assert "Scan Time:" in text
+        assert "Summary" in text
+        assert "Details" in text
+
+    def test_text_report_chinese(self) -> None:
+        report = self._make_report()
+        gen = ReportGenerator()
+        text = gen.to_text(report, lang="zh")
+        assert "=== Skill 安全扫描报告 ===" in text
+        assert "扫描时间:" in text
+        assert "摘要" in text
+        assert "详情" in text
+
+    def test_chinese_finding_translation(self) -> None:
+        report = self._make_report()
+        gen = ReportGenerator()
+        text = gen.to_text(report, lang="zh")
+        assert "缺少安全章节" in text
+
+    def test_chinese_recommendation_translation(self) -> None:
+        report = self._make_report()
+        gen = ReportGenerator()
+        text = gen.to_text(report, lang="zh")
+        assert "请使用环境变量或密钥管理器" in text
+
+    def test_generate_with_lang(self) -> None:
+        report = self._make_report()
+        gen = ReportGenerator()
+        text = gen.generate(report, "text", lang="zh")
+        assert "安全扫描报告" in text
+
+    def test_json_ignores_lang(self) -> None:
+        """JSON output should be the same regardless of lang."""
+        report = self._make_report()
+        gen = ReportGenerator()
+        json_en = gen.generate(report, "json", lang="en")
+        json_zh = gen.generate(report, "json", lang="zh")
+        assert json_en == json_zh

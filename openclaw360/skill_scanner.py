@@ -19,6 +19,148 @@ import yaml
 from openclaw360.exceptions import ScanError, SkillParseError
 
 
+# ---------------------------------------------------------------------------
+# i18n translation tables
+# ---------------------------------------------------------------------------
+
+_TRANSLATIONS: dict[str, dict[str, str]] = {
+    "en": {
+        "report_title": "=== Skill Security Scan Report ===",
+        "scan_time": "Scan Time",
+        "skills_scanned": "Skills Scanned",
+        "overall_score": "Overall Score",
+        "summary": "Summary",
+        "details": "Details",
+        "score": "Score",
+        "parse_error": "Parse Error",
+        "file": "File",
+        "line": "Line",
+        "recommendation": "Recommendation",
+        "score_distribution": "Score Distribution",
+        "critical_label": "critical",
+        "warning_label": "warning",
+        "good_label": "good",
+        "best": "Best",
+        "worst": "Worst",
+        "findings": "Findings",
+        "needs_attention": "Skills needing immediate attention",
+        "multiple_issues": "multiple issues",
+        "missing_section": "Missing security section",
+        "missing_perm_decl": "Missing permission declaration: metadata.clawdbot.requires not found",
+        "add_section_rec": "Add a '{section}' section to SKILL.md to document security considerations.",
+        "add_requires_rec": "Add a 'requires' section to metadata.clawdbot to declare needed permissions.",
+    },
+    "zh": {
+        "report_title": "=== Skill 安全扫描报告 ===",
+        "scan_time": "扫描时间",
+        "skills_scanned": "扫描 Skill 数量",
+        "overall_score": "综合评分",
+        "summary": "摘要",
+        "details": "详情",
+        "score": "评分",
+        "parse_error": "解析错误",
+        "file": "文件",
+        "line": "行号",
+        "recommendation": "建议",
+        "score_distribution": "评分分布",
+        "critical_label": "危险",
+        "warning_label": "警告",
+        "good_label": "良好",
+        "best": "最佳",
+        "worst": "最差",
+        "findings": "发现",
+        "needs_attention": "需要立即关注的 Skill",
+        "multiple_issues": "多个问题",
+        "missing_section": "缺少安全章节",
+        "missing_perm_decl": "缺少权限声明：未找到 metadata.clawdbot.requires",
+        "add_section_rec": "请在 SKILL.md 中添加 '{section}' 章节以说明安全相关信息。",
+        "add_requires_rec": "请在 metadata.clawdbot 中添加 'requires' 字段以声明所需权限。",
+    },
+}
+
+# Finding description translations (en -> zh)
+_FINDING_TRANSLATIONS_ZH: dict[str, str] = {
+    # ScriptAnalyzer
+    "Unescaped variable interpolation": "未转义的变量插值",
+    "eval() call": "eval() 调用",
+    "curl | sh pipe execution": "curl | sh 管道执行",
+    "exec() with dynamic arguments": "exec() 动态参数调用",
+    "File write outside Skill directory": "向 Skill 目录外写入文件",
+    "File copy outside Skill directory": "向 Skill 目录外复制文件",
+    # NetworkAnalyzer
+    "POST/PUT request with local file content or environment variables": "POST/PUT 请求包含本地文件内容或环境变量",
+    "Network request with dynamic URL": "使用动态 URL 的网络请求",
+    "Non-HTTPS endpoint detected": "检测到非 HTTPS 端点",
+    # PermissionChecker
+    "Missing permission declaration: metadata.clawdbot.requires not found": "缺少权限声明：未找到 metadata.clawdbot.requires",
+    # Recommendation translations
+    "Use environment variables or a secrets manager instead of hardcoding credentials.": "请使用环境变量或密钥管理器，避免硬编码凭据。",
+    "Use HTTPS instead of HTTP for secure communication.": "请使用 HTTPS 替代 HTTP 以确保通信安全。",
+    "Use static, validated URLs for network requests.": "请使用静态、经过验证的 URL 进行网络请求。",
+    "Avoid sending local file content or sensitive environment variables in HTTP requests.": "避免在 HTTP 请求中发送本地文件内容或敏感环境变量。",
+    "Restrict file operations to the Skill directory.": "请将文件操作限制在 Skill 目录内。",
+    "Reduce the number of required binaries to the minimum necessary.": "请将所需二进制文件减少到最低限度。",
+}
+
+
+def _t(lang: str, key: str, **kwargs: Any) -> str:
+    """Look up a translation string, falling back to English."""
+    table = _TRANSLATIONS.get(lang, _TRANSLATIONS["en"])
+    template = table.get(key, _TRANSLATIONS["en"].get(key, key))
+    return template.format(**kwargs) if kwargs else template
+
+
+def _translate_finding(desc: str, lang: str) -> str:
+    """Translate a finding description if a translation exists."""
+    if lang == "en":
+        return desc
+    # Try exact match first
+    if desc in _FINDING_TRANSLATIONS_ZH:
+        return _FINDING_TRANSLATIONS_ZH[desc]
+    # Handle "Missing security section: X" pattern
+    if desc.startswith("Missing security section: "):
+        section = desc[len("Missing security section: "):]
+        return f"缺少安全章节: {section}"
+    # Handle "Hardcoded X detected: Y" pattern
+    if desc.startswith("Hardcoded ") and " detected: " in desc:
+        parts = desc.split(" detected: ", 1)
+        data_type = parts[0][len("Hardcoded "):]
+        masked = parts[1]
+        return f"检测到硬编码的 {data_type}: {masked}"
+    # Handle "High-risk binary requested: X"
+    if desc.startswith("High-risk binary requested: "):
+        bin_name = desc[len("High-risk binary requested: "):]
+        return f"请求高风险二进制文件: {bin_name}"
+    # Handle "Sensitive environment variable requested: X"
+    if desc.startswith("Sensitive environment variable requested: "):
+        rest = desc[len("Sensitive environment variable requested: "):]
+        return f"请求敏感环境变量: {rest}"
+    # Handle "Excessive binary permissions: X"
+    if desc.startswith("Excessive binary permissions: "):
+        rest = desc[len("Excessive binary permissions: "):]
+        return f"过多的二进制权限: {rest}"
+    # Try prefix match for other parameterized descriptions
+    for en, zh in _FINDING_TRANSLATIONS_ZH.items():
+        if desc.startswith(en):
+            return zh + desc[len(en):]
+    return desc
+
+
+def _translate_recommendation(rec: str, lang: str) -> str:
+    """Translate a recommendation if a translation exists."""
+    if lang == "en":
+        return rec
+    if rec in _FINDING_TRANSLATIONS_ZH:
+        return _FINDING_TRANSLATIONS_ZH[rec]
+    # Handle parameterized recommendations like "Add a 'X' section..."
+    if rec.startswith("Add a '") and "section to SKILL.md" in rec:
+        section = rec.split("'")[1]
+        return _t(lang, "add_section_rec", section=section)
+    if rec.startswith("Add a 'requires'"):
+        return _t(lang, "add_requires_rec")
+    return rec
+
+
 class FindingSeverity(Enum):
     """Security finding severity level."""
 
@@ -789,21 +931,23 @@ class ReportGenerator:
     """Scan report generator.
 
     Serializes ScanReport to JSON or human-readable text format.
+    Supports ``lang`` parameter for i18n (``"en"`` / ``"zh"``).
     """
 
-    def generate(self, report: ScanReport, output_format: str = "text") -> str:
+    def generate(self, report: ScanReport, output_format: str = "text", lang: str = "en") -> str:
         """Generate report output.
 
         Args:
             report: ScanReport data.
             output_format: ``"text"`` or ``"json"``.
+            lang: Language code (``"en"`` or ``"zh"``).
 
         Returns:
             Formatted report string.
         """
         if output_format == "json":
             return self.to_json(report)
-        return self.to_text(report)
+        return self.to_text(report, lang=lang)
 
     def to_json(self, report: ScanReport) -> str:
         """Serialize a ScanReport to JSON.
@@ -822,7 +966,7 @@ class ReportGenerator:
         raw = dataclasses.asdict(report)
         return json.dumps(raw, default=_convert, indent=2, ensure_ascii=False)
 
-    def _build_summary(self, report: ScanReport) -> list[str]:
+    def _build_summary(self, report: ScanReport, lang: str = "en") -> list[str]:
         """Build a concise summary section for the text report."""
         lines: list[str] = []
         stats = report.severity_stats
@@ -836,56 +980,64 @@ class ReportGenerator:
         worst = min(report.results, key=lambda r: r.score) if report.results else None
 
         lines.append("")
-        lines.append("--- Summary ---")
-        lines.append(f"  Score Distribution: {len(critical_skills)} critical (<50) | {len(warning_skills)} warning (50-79) | {len(good_skills)} good (>=80)")
+        lines.append(f"--- {_t(lang, 'summary')} ---")
+        lines.append(
+            f"  {_t(lang, 'score_distribution')}: "
+            f"{len(critical_skills)} {_t(lang, 'critical_label')} (<50) | "
+            f"{len(warning_skills)} {_t(lang, 'warning_label')} (50-79) | "
+            f"{len(good_skills)} {_t(lang, 'good_label')} (>=80)"
+        )
         if best:
-            lines.append(f"  Best:  {best.skill_name} ({best.score}/100)")
+            lines.append(f"  {_t(lang, 'best')}:  {best.skill_name} ({best.score}/100)")
         if worst and worst.skill_name != (best.skill_name if best else ""):
-            lines.append(f"  Worst: {worst.skill_name} ({worst.score}/100)")
-        lines.append(f"  Findings: {stats.critical} critical, {stats.high} high, {stats.medium} medium, {stats.low} low, {stats.info} info")
+            lines.append(f"  {_t(lang, 'worst')}: {worst.skill_name} ({worst.score}/100)")
+        lines.append(f"  {_t(lang, 'findings')}: {stats.critical} critical, {stats.high} high, {stats.medium} medium, {stats.low} low, {stats.info} info")
 
         # Top issues quick list
         if critical_skills:
             lines.append("")
-            lines.append("  Skills needing immediate attention:")
+            lines.append(f"  {_t(lang, 'needs_attention')}:")
             for r in sorted(critical_skills, key=lambda x: x.score):
                 critical_findings = [f for f in r.findings if f.severity == FindingSeverity.CRITICAL]
-                desc = critical_findings[0].description if critical_findings else "multiple issues"
+                desc = critical_findings[0].description if critical_findings else _t(lang, "multiple_issues")
+                desc = _translate_finding(desc, lang)
                 lines.append(f"    - {r.skill_name} ({r.score}/100): {desc}")
 
         return lines
 
-    def to_text(self, report: ScanReport) -> str:
+    def to_text(self, report: ScanReport, lang: str = "en") -> str:
         """Format a ScanReport as human-readable text with summary."""
         lines: list[str] = []
-        lines.append("=== Skill Security Scan Report ===")
-        lines.append(f"Scan Time: {report.scan_time}")
-        lines.append(f"Skills Scanned: {report.skill_count}")
-        lines.append(f"Overall Score: {report.overall_score:.1f}/100")
+        lines.append(_t(lang, "report_title"))
+        lines.append(f"{_t(lang, 'scan_time')}: {report.scan_time}")
+        lines.append(f"{_t(lang, 'skills_scanned')}: {report.skill_count}")
+        lines.append(f"{_t(lang, 'overall_score')}: {report.overall_score:.1f}/100")
 
         # Add summary section
-        lines.extend(self._build_summary(report))
+        lines.extend(self._build_summary(report, lang=lang))
 
         # Per-skill details
         lines.append("")
-        lines.append("--- Details ---")
+        lines.append(f"--- {_t(lang, 'details')} ---")
         for result in report.results:
             lines.append("")
-            lines.append(f"  {result.skill_name} (Score: {result.score}/100)")
+            lines.append(f"  {result.skill_name} ({_t(lang, 'score')}: {result.score}/100)")
             if result.parse_error:
-                lines.append(f"    Parse Error: {result.parse_error}")
+                lines.append(f"    {_t(lang, 'parse_error')}: {result.parse_error}")
             for finding in result.findings:
                 severity_tag = finding.severity.value.upper()
-                lines.append(f"    [{severity_tag}] {finding.description}")
+                desc = _translate_finding(finding.description, lang)
+                lines.append(f"    [{severity_tag}] {desc}")
                 if finding.file_path or finding.line_number is not None:
                     parts: list[str] = []
                     if finding.file_path:
-                        parts.append(f"File: {finding.file_path}")
+                        parts.append(f"{_t(lang, 'file')}: {finding.file_path}")
                     if finding.line_number is not None:
-                        parts.append(f"Line: {finding.line_number}")
+                        parts.append(f"{_t(lang, 'line')}: {finding.line_number}")
                     lines.append(f"      {', '.join(parts)}")
                 if finding.recommendation:
-                    lines.append(f"      Recommendation: {finding.recommendation}")
+                    rec = _translate_recommendation(finding.recommendation, lang)
+                    lines.append(f"      {_t(lang, 'recommendation')}: {rec}")
 
         return "\n".join(lines)
 

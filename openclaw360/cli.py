@@ -227,7 +227,8 @@ def cmd_scan_skills(args: argparse.Namespace) -> int:
             min_score=args.min_score,
         )
 
-        output = scanner.report_generator.generate(report, args.format)
+        lang = getattr(args, "lang", "en") or "en"
+        output = scanner.report_generator.generate(report, args.format, lang=lang)
         print(output)
         return 0
 
@@ -414,6 +415,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument("path", nargs="?", default=None, help="Path to scan (default: ~/.openclaw/skills/ and ./skills/)")
     scan_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format (default: text)")
     scan_parser.add_argument("--min-score", type=int, default=None, help="Only report Skills with score below this value")
+    scan_parser.add_argument("--lang", choices=["en", "zh"], default="en", help="Report language (default: en)")
 
     # check-prompt
     cp_parser = subparsers.add_parser("check-prompt", help="Check if a prompt is safe (injection detection)")

@@ -147,6 +147,9 @@ openclaw360 scan-skills /path/to/skills/
 # JSON 格式输出（适合程序化处理）
 openclaw360 scan-skills --format json
 
+# 中文报告输出
+openclaw360 scan-skills --lang zh
+
 # 只显示安全评分低于指定值的 Skill
 openclaw360 scan-skills --min-score 60
 ```
@@ -172,5 +175,6 @@ openclaw360 scan-skills --min-score 60
 - 扫描结果中的凭据信息已自动脱敏，不会泄露原始值
 - 不要自己写 Python 脚本来模拟扫描，必须使用 openclaw360 命令
 - 展示扫描结果时，使用 `--format json` 获取数据，然后用用户的语言整理成易读的报告
+- 如果用户使用中文，扫描时加 `--lang zh` 参数输出中文报告；英文用户用 `--lang en`（默认）
 - 扫描时优先使用 `/opt/homebrew/lib/node_modules/openclaw/skills/` 路径（系统 Skill 目录）
 - 规则更新（`openclaw360 update`）必须由用户手动触发，不得自动执行

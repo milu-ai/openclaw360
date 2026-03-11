@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f1f5f9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d="M256 28 L462 120 L462 280 C462 380 370 460 256 492 C142 460 50 380 50 280 L50 120 Z"
+        fill="url(#shieldGrad)" opacity="0.1" />
+  <path d="M256 28 L462 120 L462 280 C462 380 370 460 256 492 C142 460 50 380 50 280 L50 120 Z"
+        fill="none" stroke="url(#shieldGrad)" stroke-width="6" />
+  <path d="M256 60 L432 140 L432 272 C432 360 350 432 256 460 C162 432 80 360 80 272 L80 140 Z"
+        fill="url(#innerGrad)" />
+
+  <circle cx="256" cy="256" r="100" fill="none" stroke="#059669" stroke-width="4"
+          stroke-dasharray="580 50" stroke-linecap="round" filter="url(#glow)" opacity="0.7" />
+  <circle cx="256" cy="256" r="72" fill="none" stroke="#0891b2" stroke-width="2"
+          stroke-dasharray="8 6" opacity="0.4" />
+
+  <rect x="228" y="248" width="56" height="44" rx="6" fill="url(#shieldGrad)" />
+  <path d="M240 248 L240 224 C240 206 272 206 272 224 L272 248"
+        fill="none" stroke="url(#shieldGrad)" stroke-width="6" stroke-linecap="round" />
+  <circle cx="256" cy="266" r="7" fill="#f8fafc" />
+  <rect x="253" y="268" width="6" height="12" rx="2" fill="#f8fafc" />
+
+  <line x1="256" y1="156" x2="256" y2="130" stroke="#059669" stroke-width="2" opacity="0.5" />
+  <line x1="356" y1="256" x2="382" y2="256" stroke="#059669" stroke-width="2" opacity="0.5" />
+  <line x1="156" y1="256" x2="130" y2="256" stroke="#059669" stroke-width="2" opacity="0.5" />
+  <line x1="256" y1="356" x2="256" y2="382" stroke="#059669" stroke-width="2" opacity="0.5" />
+
+  <path d="M100 160 L100 130 L130 130" fill="none" stroke="#059669" stroke-width="2" opacity="0.3" />
+  <path d="M412 160 L412 130 L382 130" fill="none" stroke="#059669" stroke-width="2" opacity="0.3" />
+  <path d="M100 380 L100 410 L130 410" fill="none" stroke="#059669" stroke-width="2" opacity="0.3" />
+  <path d="M412 380 L412 410 L382 410" fill="none" stroke="#059669" stroke-width="2" opacity="0.3" />
+
+  <circle cx="180" cy="180" r="3" fill="#059669" opacity="0.4" />
+  <circle cx="332" cy="180" r="3" fill="#059669" opacity="0.4" />
+  <circle cx="180" cy="332" r="3" fill="#0891b2" opacity="0.4" />
+  <circle cx="332" cy="332" r="3" fill="#0891b2" opacity="0.4" />
+</svg>

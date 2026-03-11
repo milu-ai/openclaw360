@@ -1,6 +1,6 @@
 # 🛡️ OpenClaw360
 
-AI Agent 运行时安全防护框架。以 Skill 形式无缝集成到 [OpenClaw](https://github.com/openclaw/openclaw) 等 AI Agent 框架，用户无需修改任何业务代码即可为 Agent 添加全方位安全防护。
+AI Agent 运行时安全防护框架。以 Skill 形式无缝集成到 [OpenClaw](https://github.com/openclaw/openclaw)、[Qclaw](https://qclaw.app) 等 AI Agent 客户端，用户无需修改任何业务代码即可为 Agent 添加全方位安全防护。
 
 ## 为什么需要 OpenClaw360
 

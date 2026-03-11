@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00b4d8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0e17;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#111827;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer shield shape -->
+  <path d="M256 28 L462 120 L462 280 C462 380 370 460 256 492 C142 460 50 380 50 280 L50 120 Z"
+        fill="url(#shieldGrad)" opacity="0.15" />
+
+  <!-- Shield border -->
+  <path d="M256 28 L462 120 L462 280 C462 380 370 460 256 492 C142 460 50 380 50 280 L50 120 Z"
+        fill="none" stroke="url(#shieldGrad)" stroke-width="6" />
+
+  <!-- Inner shield -->
+  <path d="M256 60 L432 140 L432 272 C432 360 350 432 256 460 C162 432 80 360 80 272 L80 140 Z"
+        fill="url(#innerGrad)" />
+
+  <!-- 360 circle arc — represents continuous protection -->
+  <circle cx="256" cy="256" r="100" fill="none" stroke="#00ff88" stroke-width="4"
+          stroke-dasharray="580 50" stroke-linecap="round" filter="url(#glow)" opacity="0.8" />
+
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="72" fill="none" stroke="#00b4d8" stroke-width="2"
+          stroke-dasharray="8 6" opacity="0.5" />
+
+  <!-- Lock body -->
+  <rect x="228" y="248" width="56" height="44" rx="6" fill="url(#shieldGrad)" />
+
+  <!-- Lock shackle -->
+  <path d="M240 248 L240 224 C240 206 272 206 272 224 L272 248"
+        fill="none" stroke="url(#shieldGrad)" stroke-width="6" stroke-linecap="round" />
+
+  <!-- Lock keyhole -->
+  <circle cx="256" cy="266" r="7" fill="#0a0e17" />
+  <rect x="253" y="268" width="6" height="12" rx="2" fill="#0a0e17" />
+
+  <!-- Scan lines radiating from center -->
+  <line x1="256" y1="156" x2="256" y2="130" stroke="#00ff88" stroke-width="2" opacity="0.6" filter="url(#glow)" />
+  <line x1="356" y1="256" x2="382" y2="256" stroke="#00ff88" stroke-width="2" opacity="0.6" filter="url(#glow)" />
+  <line x1="156" y1="256" x2="130" y2="256" stroke="#00ff88" stroke-width="2" opacity="0.6" filter="url(#glow)" />
+  <line x1="256" y1="356" x2="256" y2="382" stroke="#00ff88" stroke-width="2" opacity="0.6" filter="url(#glow)" />
+
+  <!-- Corner brackets — tech/HUD feel -->
+  <path d="M100 160 L100 130 L130 130" fill="none" stroke="#00ff88" stroke-width="2" opacity="0.4" />
+  <path d="M412 160 L412 130 L382 130" fill="none" stroke="#00ff88" stroke-width="2" opacity="0.4" />
+  <path d="M100 380 L100 410 L130 410" fill="none" stroke="#00ff88" stroke-width="2" opacity="0.4" />
+  <path d="M412 380 L412 410 L382 410" fill="none" stroke="#00ff88" stroke-width="2" opacity="0.4" />
+
+  <!-- Small dots — data nodes -->
+  <circle cx="180" cy="180" r="3" fill="#00ff88" opacity="0.5" />
+  <circle cx="332" cy="180" r="3" fill="#00ff88" opacity="0.5" />
+  <circle cx="180" cy="332" r="3" fill="#00b4d8" opacity="0.5" />
+  <circle cx="332" cy="332" r="3" fill="#00b4d8" opacity="0.5" />
+</svg>

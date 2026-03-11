@@ -22,6 +22,74 @@
       --yellow: #feca57;
     }
 
+    /* Light theme */
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --green: #059669;
+      --green-dim: #047857;
+      --blue: #0284c7;
+      --cyan: #0891b2;
+      --text: #1e293b;
+      --text-dim: #64748b;
+      --red: #dc2626;
+      --orange: #ea580c;
+      --yellow: #ca8a04;
+    }
+    [data-theme="light"] body::before { display: none; }
+    [data-theme="light"] .grid-bg {
+      background-image:
+        linear-gradient(rgba(5, 150, 105, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(5, 150, 105, 0.04) 1px, transparent 1px);
+    }
+    [data-theme="light"] nav { background: rgba(248, 250, 252, 0.9); }
+    [data-theme="light"] .hero h1 {
+      background: linear-gradient(135deg, #059669, #0891b2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    [data-theme="light"] .install-box { background: #f1f5f9; }
+    [data-theme="light"] .code-header { background: #f1f5f9; }
+    [data-theme="light"] .code-block code { color: #1e293b; }
+    [data-theme="light"] .kw { color: #7c3aed; }
+    [data-theme="light"] .mod { color: #0891b2; }
+    [data-theme="light"] .str { color: #059669; }
+    [data-theme="light"] .cmt { color: #94a3b8; }
+    [data-theme="light"] .fn { color: #2563eb; }
+    [data-theme="light"] .arch-svg polygon { fill: #059669; }
+    [data-theme="light"] .arch-svg marker#arrBlue polygon { fill: #0284c7; }
+    [data-theme="light"] .arch-svg rect[stroke="#1e293b"] { stroke: #d1d5db; }
+    [data-theme="light"] .arch-svg rect[stroke="#00ff88"] { stroke: #059669; }
+    [data-theme="light"] .arch-svg rect[stroke="#00b4d8"] { stroke: #0284c7; }
+    [data-theme="light"] .arch-svg line[stroke="#00ff88"] { stroke: #059669; }
+    [data-theme="light"] .arch-svg line[stroke="#00b4d8"] { stroke: #0284c7; }
+    [data-theme="light"] .arch-svg path[stroke="#00b4d8"] { stroke: #0284c7; }
+    [data-theme="light"] .arch-svg text[fill="#e2e8f0"] { fill: #1e293b; }
+    [data-theme="light"] .arch-svg text[fill="#94a3b8"] { fill: #64748b; }
+    [data-theme="light"] .arch-svg text[fill="#00ff88"] { fill: #059669; }
+    [data-theme="light"] .hero-logo { filter: drop-shadow(0 0 12px rgba(5, 150, 105, 0.2)); }
+    [data-theme="light"] .tag-critical { background: rgba(220, 38, 38, 0.1); }
+    [data-theme="light"] .tag-engine { background: rgba(2, 132, 199, 0.1); }
+    [data-theme="light"] .tag-dlp { background: rgba(202, 138, 4, 0.1); }
+    [data-theme="light"] .tag-scanner { background: rgba(5, 150, 105, 0.1); }
+
+    /* Theme toggle */
+    .theme-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      transition: border-color 0.2s;
+      color: var(--text-dim);
+    }
+    .theme-toggle:hover { border-color: var(--green); }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -74,7 +142,8 @@
       padding: 16px 0;
     }
     nav .container { display: flex; align-items: center; justify-content: space-between; }
-    .nav-logo { font-size: 18px; font-weight: 700; color: var(--green); font-family: 'SF Mono', 'Fira Code', monospace; }
+    .nav-logo { font-size: 18px; font-weight: 700; color: var(--green); font-family: 'SF Mono', 'Fira Code', monospace; display: flex; align-items: center; gap: 8px; }
+    .nav-logo-img { width: 24px; height: 24px; }
     .nav-logo span { color: var(--text-dim); }
     .nav-links { display: flex; gap: 24px; }
     .nav-links a { color: var(--text-dim); font-size: 14px; }
@@ -97,6 +166,18 @@
       text-transform: uppercase;
       letter-spacing: 2px;
     }
+    .hero-logo {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.3));
+    }
+    .compat {
+      font-size: 15px;
+      color: var(--text-dim);
+      margin-bottom: 32px;
+    }
+    .compat a { color: var(--cyan); }
     .hero h1 {
       font-size: 64px;
       font-weight: 800;
@@ -220,41 +301,19 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 48px;
+      padding: 32px;
       max-width: 900px;
       margin: 0 auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
-    .arch-diagram { display: flex; flex-direction: column; align-items: center; gap: 0; }
-    .arch-row { display: flex; gap: 20px; justify-content: center; width: 100%; }
-    .arch-row-center { justify-content: center; }
-    .arch-node {
-      background: rgba(0, 255, 136, 0.05);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px 20px;
-      text-align: center;
-      flex: 1;
-      max-width: 260px;
+    .arch-svg {
+      width: 100%;
+      height: auto;
+      display: block;
     }
-    .arch-node-icon { font-size: 24px; margin-bottom: 6px; }
-    .arch-node-title { font-size: 14px; font-weight: 600; color: var(--text); }
-    .arch-node-detail { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-    .arch-node-sub { font-size: 11px; color: var(--green); margin-top: 4px; font-weight: 600; }
-    .arch-engine { border-color: var(--green); background: rgba(0, 255, 136, 0.08); }
-    .arch-audit { border-color: var(--blue); background: rgba(0, 180, 216, 0.08); max-width: 300px; }
-    .arch-arrows { display: flex; gap: 20px; justify-content: center; width: 100%; padding: 8px 0; }
-    .arch-arrow {
-      width: 260px;
-      height: 24px;
-      position: relative;
-      display: flex;
-      justify-content: center;
-    }
-    .arch-arrow::after {
-      content: '↓';
-      color: var(--green);
-      font-size: 18px;
-    }
+    .arch-svg-mobile { display: none; }
+    .arch-svg-desktop { display: block; }
 
     /* Code block */
     .code-block {
@@ -329,7 +388,8 @@
       align-items: center;
       justify-content: space-between;
     }
-    .footer-logo { font-size: 16px; font-weight: 700; color: var(--green); }
+    .footer-logo { font-size: 16px; font-weight: 700; color: var(--green); display: flex; align-items: center; gap: 8px; }
+    .footer-logo-img { width: 20px; height: 20px; }
     .footer-links { display: flex; gap: 20px; }
     .footer-links a { color: var(--text-dim); font-size: 14px; }
     .footer-links a:hover { color: var(--green); }
@@ -337,18 +397,45 @@
 
     /* Responsive */
     @media (max-width: 768px) {
-      .hero h1 { font-size: 40px; }
-      .hero p { font-size: 16px; }
-      .stats { flex-wrap: wrap; gap: 24px; }
-      .features-grid { grid-template-columns: 1fr; }
+      .hero { padding: 120px 0 60px; }
+      .hero h1 { font-size: 36px; }
+      .hero p { font-size: 15px; margin: 0 auto 24px; }
+      .hero-logo { width: 80px; height: 80px; }
+      .hero-badge { font-size: 10px; letter-spacing: 1px; padding: 3px 10px; }
+      .compat { font-size: 13px; margin-bottom: 20px; }
+      .install-box { font-size: 11px; padding: 10px 14px; gap: 8px; max-width: 100%; word-break: break-all; }
+      .install-box .copy-hint { display: none; }
+      .stats { flex-wrap: wrap; gap: 16px; padding: 24px 0 48px; }
+      .stat-num { font-size: 28px; }
+      .stat-label { font-size: 12px; }
+      section { padding: 48px 0; }
+      .section-title { font-size: 24px; }
+      .section-sub { font-size: 14px; margin-bottom: 32px; }
+      .features-grid { grid-template-columns: 1fr; gap: 12px; }
+      .feature-card { padding: 20px; }
+      .feature-icon { font-size: 24px; margin-bottom: 10px; }
+      .feature-card h3 { font-size: 16px; }
+      .feature-card p { font-size: 13px; }
       .cli-grid { grid-template-columns: 1fr; }
-      .arch-row { flex-direction: column; align-items: center; }
-      .arch-arrows { flex-direction: column; align-items: center; }
-      .arch-arrow { width: 100%; }
-      .install-box { font-size: 12px; padding: 10px 16px; }
+      .arch-container { padding: 16px; }
+      .arch-svg-desktop { display: none; }
+      .arch-svg-mobile { display: block; }
+      .code-block pre { padding: 16px; font-size: 11px; }
       .footer-content { flex-direction: column; gap: 16px; text-align: center; }
-      .nav-links { gap: 12px; }
-      .nav-links a { font-size: 12px; }
+      nav { padding: 10px 0; }
+      .nav-logo { font-size: 14px; }
+      .nav-logo-img { width: 20px; height: 20px; }
+      .nav-links { gap: 10px; align-items: center; }
+      .nav-links a { font-size: 11px; }
+      .theme-toggle { padding: 4px 8px; font-size: 14px; }
+    }
+    @media (max-width: 420px) {
+      .hero h1 { font-size: 28px; }
+      .install-box { font-size: 10px; padding: 8px 10px; }
+      .install-box .cmd { font-size: 10px; }
+      .nav-links a.hide-mobile { display: none; }
+      .stats { gap: 12px; }
+      .stat-num { font-size: 24px; }
     }
 </style>
 </head>
@@ -357,13 +444,14 @@
 
   <nav>
     <div class="container">
-      <div class="nav-logo">🛡️ OpenClaw360</div>
+      <div class="nav-logo"><img src="logo.svg" alt="" class="nav-logo-img theme-logo"> OpenClaw360</div>
       <div class="nav-links">
         <a href="#features">功能</a>
-        <a href="#architecture">架构</a>
-        <a href="#quickstart">快速开始</a>
+        <a href="#architecture" class="hide-mobile">架构</a>
+        <a href="#quickstart" class="hide-mobile">快速开始</a>
         <a href="https://github.com/milu-ai/openclaw360" target="_blank">GitHub</a>
-        <a href="https://clawhub.ai/326668808/openclaw360" target="_blank">ClawHub</a>
+        <a href="https://clawhub.ai/326668808/openclaw360" target="_blank" class="hide-mobile">ClawHub</a>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="切换主题">🌙</button>
       </div>
     </div>
   </nav>
@@ -372,8 +460,10 @@
   <section class="hero">
     <div class="container">
       <div class="hero-badge">Runtime Security for AI Agents</div>
+      <img src="logo.svg" alt="OpenClaw360 Logo" class="hero-logo theme-logo">
       <h1>OpenClaw360</h1>
-      <p>AI Agent 运行时安全防护框架。四层防护，零代码集成，500ms 超时保护。</p>
+      <p>AI Agent 运行时安全防护框架。四层防护，零代码集成，PIPL 合规就绪。</p>
+      <p class="compat">兼容 <a href="https://github.com/openclaw/openclaw" target="_blank">OpenClaw</a>、<a href="https://qclaw.app" target="_blank">Qclaw</a> 等主流 AI Agent 客户端</p>
       <div class="install-box" onclick="copyInstall()" id="installBox">
         <span class="prompt">$</span>
         <span class="cmd">pip install git+https://github.com/milu-ai/openclaw360.git</span>
@@ -442,54 +532,118 @@
       <div class="section-title">架构</div>
       <div class="section-sub">Hook 机制拦截 Agent 三个关键节点，所有事件签名记录到审计日志</div>
       <div class="arch-container">
-        <div class="arch-diagram">
-          <div class="arch-row">
-            <div class="arch-node arch-input">
-              <div class="arch-node-icon">👤</div>
-              <div class="arch-node-title">用户/外部输入</div>
-            </div>
-            <div class="arch-node arch-agent">
-              <div class="arch-node-icon">🤖</div>
-              <div class="arch-node-title">Agent 工具调用</div>
-            </div>
-            <div class="arch-node arch-output">
-              <div class="arch-node-icon">📤</div>
-              <div class="arch-node-title">Agent 输出</div>
-            </div>
-          </div>
-          <div class="arch-arrows">
-            <div class="arch-arrow"></div>
-            <div class="arch-arrow"></div>
-            <div class="arch-arrow"></div>
-          </div>
-          <div class="arch-row">
-            <div class="arch-node arch-engine">
-              <div class="arch-node-title">Prompt Security Engine</div>
-              <div class="arch-node-detail">规则检测 · LLM 分类 · 来源加权</div>
-              <div class="arch-node-sub">+ DLP Engine</div>
-            </div>
-            <div class="arch-node arch-engine">
-              <div class="arch-node-title">Tool Guard</div>
-              <div class="arch-node-detail">RBAC 权限 · 三维评分 · 三级决策</div>
-            </div>
-            <div class="arch-node arch-engine">
-              <div class="arch-node-title">DLP Engine</div>
-              <div class="arch-node-detail">13 类检测 · 零知识日志 · 自动脱敏</div>
-            </div>
-          </div>
-          <div class="arch-arrows">
-            <div class="arch-arrow"></div>
-            <div class="arch-arrow"></div>
-            <div class="arch-arrow"></div>
-          </div>
-          <div class="arch-row arch-row-center">
-            <div class="arch-node arch-audit">
-              <div class="arch-node-icon">📋</div>
-              <div class="arch-node-title">Audit Logger</div>
-              <div class="arch-node-detail">Ed25519 签名审计日志</div>
-            </div>
-          </div>
-        </div>
+        <svg class="arch-svg arch-svg-desktop" viewBox="0 0 780 440" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" />
+            </marker>
+            <marker id="arrBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#00b4d8" />
+            </marker>
+          </defs>
+
+          <!-- ===== Row 1: Input nodes ===== -->
+          <rect x="20" y="20" width="220" height="60" rx="8" fill="rgba(0,255,136,0.05)" stroke="#1e293b" stroke-width="1.5" />
+          <text x="130" y="55" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">👤 用户/外部输入</text>
+
+          <rect x="280" y="20" width="220" height="60" rx="8" fill="rgba(0,255,136,0.05)" stroke="#1e293b" stroke-width="1.5" />
+          <text x="390" y="55" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">🤖 Agent 工具调用</text>
+
+          <rect x="540" y="20" width="220" height="60" rx="8" fill="rgba(0,255,136,0.05)" stroke="#1e293b" stroke-width="1.5" />
+          <text x="650" y="55" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">📤 Agent 输出</text>
+
+          <!-- ===== Arrows: Row 1 → Row 2 (green) ===== -->
+          <line x1="130" y1="80" x2="130" y2="148" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrGreen)" />
+          <line x1="390" y1="80" x2="390" y2="148" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrGreen)" />
+          <line x1="650" y1="80" x2="650" y2="148" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrGreen)" />
+
+          <!-- ===== Row 2: Engine nodes ===== -->
+          <rect x="20" y="150" width="220" height="80" rx="8" fill="rgba(0,255,136,0.08)" stroke="#00ff88" stroke-width="1.5" />
+          <text x="130" y="178" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">Prompt Security Engine</text>
+          <text x="130" y="198" text-anchor="middle" fill="#94a3b8" font-size="11">规则检测 · LLM 分类 · 来源加权</text>
+          <text x="130" y="218" text-anchor="middle" fill="#00ff88" font-size="11" font-weight="600">+ DLP Engine</text>
+
+          <rect x="280" y="150" width="220" height="80" rx="8" fill="rgba(0,255,136,0.08)" stroke="#00ff88" stroke-width="1.5" />
+          <text x="390" y="178" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">Tool Guard</text>
+          <text x="390" y="198" text-anchor="middle" fill="#94a3b8" font-size="11">RBAC 权限 · 三维评分 · 三级决策</text>
+
+          <rect x="540" y="150" width="220" height="80" rx="8" fill="rgba(0,255,136,0.08)" stroke="#00ff88" stroke-width="1.5" />
+          <text x="650" y="178" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">DLP Engine</text>
+          <text x="650" y="198" text-anchor="middle" fill="#94a3b8" font-size="11">13 类检测 · 零知识日志 · 自动脱敏</text>
+
+          <!-- ===== Arrows: Row 2 → Audit Logger (blue, converging) ===== -->
+          <!-- Left: down from Prompt Engine, bend right to Audit Logger left edge -->
+          <path d="M130 230 L130 310 Q130 330 150 330 L280 330" fill="none" stroke="#00b4d8" stroke-width="1.5" marker-end="url(#arrBlue)" />
+          <!-- Center: straight down from Tool Guard to Audit Logger top -->
+          <line x1="390" y1="230" x2="390" y2="318" stroke="#00b4d8" stroke-width="1.5" marker-end="url(#arrBlue)" />
+          <!-- Right: down from DLP Engine, bend left to Audit Logger right edge -->
+          <path d="M650 230 L650 310 Q650 330 630 330 L500 330" fill="none" stroke="#00b4d8" stroke-width="1.5" marker-end="url(#arrBlue)" />
+
+          <!-- ===== Row 3: Audit Logger ===== -->
+          <rect x="280" y="320" width="220" height="70" rx="8" fill="rgba(0,180,216,0.08)" stroke="#00b4d8" stroke-width="1.5" />
+          <text x="390" y="352" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">📋 Audit Logger</text>
+          <text x="390" y="372" text-anchor="middle" fill="#94a3b8" font-size="11">Ed25519 签名审计日志</text>
+        </svg>
+
+        <!-- Mobile vertical layout -->
+        <svg class="arch-svg arch-svg-mobile" viewBox="0 0 300 720" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrM" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#00ff88" />
+            </marker>
+            <marker id="arrMb" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#00b4d8" />
+            </marker>
+          </defs>
+
+          <!-- Node 1: 用户输入 -->
+          <rect x="20" y="10" width="260" height="50" rx="8" fill="rgba(0,255,136,0.05)" stroke="#1e293b" stroke-width="1.5" />
+          <text x="150" y="40" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">👤 用户/外部输入</text>
+
+          <line x1="150" y1="60" x2="150" y2="90" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrM)" />
+
+          <!-- Node 2: Prompt Security Engine -->
+          <rect x="20" y="90" width="260" height="70" rx="8" fill="rgba(0,255,136,0.08)" stroke="#00ff88" stroke-width="1.5" />
+          <text x="150" y="116" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">Prompt Security Engine</text>
+          <text x="150" y="134" text-anchor="middle" fill="#94a3b8" font-size="10">规则检测 · LLM 分类 · 来源加权</text>
+          <text x="150" y="150" text-anchor="middle" fill="#00ff88" font-size="10" font-weight="600">+ DLP Engine</text>
+
+          <line x1="150" y1="160" x2="150" y2="190" stroke="#00b4d8" stroke-width="1.5" marker-end="url(#arrMb)" />
+
+          <!-- Node 3: Agent 工具调用 -->
+          <rect x="20" y="200" width="260" height="50" rx="8" fill="rgba(0,255,136,0.05)" stroke="#1e293b" stroke-width="1.5" />
+          <text x="150" y="230" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">🤖 Agent 工具调用</text>
+
+          <line x1="150" y1="250" x2="150" y2="280" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrM)" />
+
+          <!-- Node 4: Tool Guard -->
+          <rect x="20" y="280" width="260" height="60" rx="8" fill="rgba(0,255,136,0.08)" stroke="#00ff88" stroke-width="1.5" />
+          <text x="150" y="306" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">Tool Guard</text>
+          <text x="150" y="324" text-anchor="middle" fill="#94a3b8" font-size="10">RBAC 权限 · 三维评分 · 三级决策</text>
+
+          <line x1="150" y1="340" x2="150" y2="370" stroke="#00b4d8" stroke-width="1.5" marker-end="url(#arrMb)" />
+
+          <!-- Node 5: Agent 输出 -->
+          <rect x="20" y="380" width="260" height="50" rx="8" fill="rgba(0,255,136,0.05)" stroke="#1e293b" stroke-width="1.5" />
+          <text x="150" y="410" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">📤 Agent 输出</text>
+
+          <line x1="150" y1="430" x2="150" y2="460" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrM)" />
+
+          <!-- Node 6: DLP Engine -->
+          <rect x="20" y="460" width="260" height="60" rx="8" fill="rgba(0,255,136,0.08)" stroke="#00ff88" stroke-width="1.5" />
+          <text x="150" y="486" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">DLP Engine</text>
+          <text x="150" y="504" text-anchor="middle" fill="#94a3b8" font-size="10">13 类检测 · 零知识日志 · 自动脱敏</text>
+
+          <line x1="150" y1="520" x2="150" y2="550" stroke="#00b4d8" stroke-width="1.5" marker-end="url(#arrMb)" />
+
+          <!-- Converge label -->
+          <text x="150" y="575" text-anchor="middle" fill="#94a3b8" font-size="10">▼ 所有事件汇聚 ▼</text>
+
+          <!-- Node 7: Audit Logger -->
+          <rect x="30" y="590" width="240" height="60" rx="8" fill="rgba(0,180,216,0.08)" stroke="#00b4d8" stroke-width="1.5" />
+          <text x="150" y="616" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">📋 Audit Logger</text>
+          <text x="150" y="636" text-anchor="middle" fill="#94a3b8" font-size="10">Ed25519 签名审计日志</text>
+        </svg>
       </div>
     </div>
   </section>
@@ -568,7 +722,7 @@ result = guard.on_output(<span class="str">"API key: sk-abc123def456ghi789jkl012
   <footer>
     <div class="container">
       <div class="footer-content">
-        <div class="footer-logo">🛡️ OpenClaw360</div>
+        <div class="footer-logo"><img src="logo.svg" alt="" class="footer-logo-img theme-logo"> OpenClaw360</div>
         <div class="footer-links">
           <a href="https://github.com/milu-ai/openclaw360" target="_blank">GitHub</a>
           <a href="https://clawhub.ai/326668808/openclaw360" target="_blank">ClawHub</a>
@@ -586,7 +740,7 @@ result = guard.on_output(<span class="str">"API key: sk-abc123def456ghi789jkl012
         const hint = box.querySelector('.copy-hint');
         hint.textContent = '已复制 ✓';
         hint.style.opacity = '1';
-        hint.style.color = '#00ff88';
+        hint.style.color = 'var(--green)';
         setTimeout(() => {
           hint.textContent = '点击复制';
           hint.style.color = '';
@@ -594,6 +748,42 @@ result = guard.on_output(<span class="str">"API key: sk-abc123def456ghi789jkl012
         }, 2000);
       });
     }
+
+    // Theme toggle
+    function setLogoSrc(theme) {
+      var src = theme === 'light' ? 'logo-light.svg' : 'logo.svg';
+      document.querySelectorAll('.theme-logo').forEach(function(img) { img.src = src; });
+    }
+
+    function toggleTheme() {
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme');
+      var next = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      document.getElementById('themeBtn').textContent = next === 'light' ? '☀️' : '🌙';
+      setLogoSrc(next);
+      localStorage.setItem('oc360-theme', next);
+    }
+
+    // Init theme from localStorage, time of day, or system preference
+    (function() {
+      var saved = localStorage.getItem('oc360-theme');
+      var theme = 'dark';
+      if (saved) {
+        theme = saved;
+      } else {
+        // Auto: 7:00-18:59 light, 19:00-6:59 dark
+        var hour = new Date().getHours();
+        if (hour >= 7 && hour < 19) {
+          theme = 'light';
+        } else {
+          theme = 'dark';
+        }
+      }
+      document.documentElement.setAttribute('data-theme', theme);
+      document.getElementById('themeBtn').textContent = theme === 'light' ? '☀️' : '🌙';
+      setLogoSrc(theme);
+    })();
   </script>
 </body>
 </html>

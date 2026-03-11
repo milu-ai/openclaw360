@@ -160,12 +160,34 @@ openclaw360 scan-skills --min-score 60
 
 ## 功能
 
-- **提示词注入检测**：识别 jailbreak、prompt injection 等 10 种攻击模式
-- **工具调用授权**：三维风险评分 + AI-RBAC 权限控制
-- **DLP 数据防泄露**：检测 13 类敏感数据（含 PIPL 个人信息），自动脱敏，零知识日志
-- **Skill 安全扫描**：6 个检查器静态分析第三方 Skill 的安全风险
-- **审计日志**：Ed25519 签名审计记录，支持查询和报告
-- **500ms 超时保护**：安全检查超时自动放行，不阻塞 agent 运行
+### 提示词注入检测
+双引擎架构，全面拦截恶意提示词：
+- **规则检测器**：正则匹配 10 种内置攻击模式（直接注入、角色覆盖、指令劫持、目标混淆、DAN/Developer Mode、安全策略绕过、凭证窃取、数据外泄、工具滥用、社会工程）
+- **LLM 语义分类器**（可选）：对规则引擎无法覆盖的语义级攻击进行深度分析
+- **来源权重加权**：`user=1.0` / `web=1.3` / `document=1.1` / `screen=1.2`，外部来源自动获得更高风险权重
+- **风险公式**：`risk = min(max(rule_confidence, llm_confidence) × source_weight, 1.0)`
+- **规则热更新**：Ed25519 签名验证 + 原子写入 + 版本回滚，支持自定义扩展
+
+### 工具调用授权
+三维风险评分 + AI-RBAC 双重防护：
+- **三维风险评分**：`total = action×0.4 + data×0.35 + context×0.25`
+  - action：工具类型基线风险（`shell_execute=0.9`、`file_write=0.7` 等）+ 危险参数检测（`rm -rf`、`sudo`、`chmod 777`、`curl | sh`）
+  - data：参数中敏感数据关键词启发式检测（password、api_key、token、credential 等）
+  - context：上下文风险因素（首次运行 +0.1、快速连续调用 +0.2、权限提升 +0.3）
+- **三级决策**：≥0.8 直接 BLOCK / ≥0.5 需用户 CONFIRM / <0.5 ALLOW
+- **AI-RBAC**：基于 agent_id 的工具级权限管理，RBAC 拒绝优先级高于风险评分，直接 BLOCK
+
+### DLP 数据防泄露
+检测 13 类敏感数据（含 PIPL 个人信息），自动脱敏，零知识日志
+
+### Skill 安全扫描
+6 个检查器静态分析第三方 Skill 的安全风险（Shell 注入、网络风险、硬编码凭证、权限检查、Prompt 注入、章节完整性）
+
+### 审计日志
+Ed25519 签名审计记录，JSONL 格式，支持按 agent_id / action / decision / 时间范围查询和报告生成
+
+### 500ms 超时保护
+安全检查超时自动放行（`metadata.timeout=True`），不阻塞 agent 运行
 
 ## Rules
 

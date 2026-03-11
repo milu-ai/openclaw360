@@ -129,3 +129,5 @@ openclaw360 scan-skills --min-score 60
 - 记住第 1 步确定的命令路径，后续所有命令都用同一个路径
 - 扫描结果中的凭据信息已自动脱敏，不会泄露原始值
 - 不要自己写 Python 脚本来模拟扫描，必须使用 openclaw360 命令
+- 展示扫描结果时，使用 `--format json` 获取数据，然后用用户的语言整理成易读的报告
+- 扫描时优先使用 `/opt/homebrew/lib/node_modules/openclaw/skills/` 路径（系统 Skill 目录）

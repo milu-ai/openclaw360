@@ -262,6 +262,7 @@ class ScanReport:
     results: list[SkillScanResult]  # Per-Skill scan results
     overall_score: float  # Overall security score (arithmetic mean)
     severity_stats: SeverityStats  # Finding counts by severity
+    scanned_paths: list[str] = field(default_factory=list)  # Paths that were scanned
 
 
 class SkillMDParser:
@@ -1246,6 +1247,7 @@ class SkillScanner:
             results=results,
             overall_score=overall_score,
             severity_stats=stats,
+            scanned_paths=[str(d) for d in skill_dirs],
         )
 
     def scan_single_skill(self, skill_dir: Path) -> SkillScanResult:

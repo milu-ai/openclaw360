@@ -11,9 +11,9 @@ metadata:
     source: https://github.com/milu-ai/openclaw360
     install:
       - name: "pip install (pinned commit)"
-        command: "pip3 install git+https://github.com/milu-ai/openclaw360.git@3f9258e"
+        command: "pip3 install git+https://github.com/milu-ai/openclaw360.git@37edc7d"
       - name: "pip install (venv, for Homebrew Python)"
-        command: "python3 -m venv ~/.openclaw360-venv && ~/.openclaw360-venv/bin/pip install git+https://github.com/milu-ai/openclaw360.git@3f9258e"
+        command: "python3 -m venv ~/.openclaw360-venv && ~/.openclaw360-venv/bin/pip install git+https://github.com/milu-ai/openclaw360.git@37edc7d"
     requires:
       bins: ["python3"]
       env: []

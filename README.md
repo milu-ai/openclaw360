@@ -137,7 +137,7 @@ AI-RBAC 权限控制：基于 agent_id 的工具级权限管理，RBAC 检查失
 |--------|---------|---------|
 | ScriptAnalyzer | Shell 注入（`eval`、`curl \| sh`、未转义变量）、外部写入 | Critical / High |
 | NetworkAnalyzer | 非 HTTPS 请求、动态 URL、POST 数据外泄 | Medium / High / Critical |
-| SecretDetector | 硬编码 API Key、密码、Token、SSH 私钥 | Critical |
+| SecretDetector | 硬编码 API Key、密码、Token、SSH 私钥（SKILL.md 示例数据智能降级为 Info/Low） | Critical / Info |
 | PermissionChecker | 高风险二进制（`sudo`、`chmod`）、敏感环境变量、过度权限 | High / Medium |
 | PromptRiskChecker | Prompt 注入（角色覆盖、安全策略绕过）、隐藏指令 | Critical / High |
 | 章节完整性检查 | 缺少 Permissions / Data Handling / Network Access 章节 | Low |
@@ -148,6 +148,13 @@ AI-RBAC 权限控制：基于 agent_id 的工具级权限管理，RBAC 检查失
 score = max(0, 100 - Σ deductions)
 deductions: critical=25, high=15, medium=8, low=3, info=0
 ```
+
+上下文感知评分：
+- SKILL.md 文档中的示例数据（如 `you@example.com`、`15551234567`）自动降级为 Info（不扣分），避免文档示例拉低评分
+- SKILL.md 中不确定是否示例的凭证降级为 Low（扣 3 分）
+- 脚本/配置文件中的凭证保持 Critical（扣 25 分）
+- 缺少 Network Access 章节 + 存在网络请求 → Low 升级为 Medium
+- 缺少 Data Handling 章节 + 存在凭证检测 → Low 升级为 Medium
 
 #### 在 OpenClaw 中使用
 
@@ -160,6 +167,9 @@ deductions: critical=25, high=15, medium=8, low=3, info=0
 #   ~/.openclaw/skills/
 #   ./skills/（当前工作目录下）
 openclaw360 scan-skills
+
+# 中文报告
+openclaw360 scan-skills --lang zh
 ```
 
 输出示例：
@@ -172,10 +182,10 @@ openclaw360 scan-skills
 === Skill Security Scan Report ===
 Scan Time: 2026-03-11T08:30:00+00:00
 Skills Scanned: 3
-Overall Score: 62.0/100
+Overall Score: 72.3/100
 
 --- web-scraper (Score: 45/100) ---
-  [CRITICAL] eval 调用
+  [CRITICAL] eval() 调用
     File: scripts/fetch.py, Line: 12
     Recommendation: Avoid using eval(). Use ast.literal_eval() or a safe parser instead.
   [HIGH] 高风险二进制文件: sudo
@@ -186,12 +196,12 @@ Overall Score: 62.0/100
     Recommendation: Use HTTPS instead of HTTP for all network requests.
   [LOW] Missing security section: Data Handling
     File: SKILL.md
-    Recommendation: Add a 'Data Handling' section to SKILL.md to document security considerations.
+    Recommendation: Add a 'Data Handling' section to SKILL.md.
 
---- code-formatter (Score: 91/100) ---
-  [LOW] Missing security section: Network Access
-    File: SKILL.md
-    Recommendation: Add a 'Network Access' section to SKILL.md to document security considerations.
+--- email-helper (Score: 97/100) ---
+  [INFO] Hardcoded email detected: you@***l.com
+    File: SKILL.md, Line: 25
+    Recommendation: Documentation example data detected. Consider replacing with <your-email>.
 
 --- data-pipeline (Score: 50/100) ---
   [CRITICAL] Hardcoded credential detected: AKIA***XMPL
@@ -202,8 +212,10 @@ Overall Score: 62.0/100
     Recommendation: Avoid piping curl output to sh. Download first, verify, then execute.
 
 Summary:
-  Critical: 2, High: 2, Medium: 1, Low: 2, Info: 0
+  Critical: 2, High: 2, Medium: 1, Low: 1, Info: 1
 ```
+
+注意：SKILL.md 文档中的示例邮箱/手机号（如 `you@gmail.com`）会被智能识别为文档示例数据，降级为 Info 级别（不扣分），不会拉低 Skill 评分。
 
 ##### 场景 2：扫描指定目录
 
@@ -295,7 +307,7 @@ for result in report.results:
 ##### 命令参数速查
 
 ```
-openclaw360 scan-skills [path] [--format {json,text}] [--min-score N]
+openclaw360 scan-skills [path] [--format {json,text}] [--min-score N] [--lang {en,zh}]
 
 位置参数:
   path                  扫描路径（可选，默认扫描 ~/.openclaw/skills/ 和 ./skills/）
@@ -303,6 +315,7 @@ openclaw360 scan-skills [path] [--format {json,text}] [--min-score N]
 选项:
   --format {json,text}  输出格式（默认 text）
   --min-score N         只报告安全评分低于 N 的 Skill
+  --lang {en,zh}        报告语言（默认 en，中文用 zh）
 ```
 
 ## 安装
@@ -343,11 +356,14 @@ print(result.decision)   # Decision.BLOCK
 ```bash
 openclaw360 init                          # 初始化配置和 agent 身份
 openclaw360 protect                       # 启动安全防护模式
+openclaw360 check-prompt "文本" [--source user|web|document|screen]  # 检测提示词注入
+openclaw360 check-tool 工具名 [参数=值...]  # 检测工具调用风险
+openclaw360 check-output "输出文本"        # 检测敏感数据泄露
+openclaw360 scan-skills [path] [--lang zh|en] [--format json|text] [--min-score N]  # 扫描 Skill 安全
 openclaw360 audit --agent-id <id>         # 查询审计日志
 openclaw360 report --agent-id <id>        # 生成审计报告
 openclaw360 update                        # 检查并更新安全规则
 openclaw360 rollback <version>            # 回滚规则到指定版本
-openclaw360 scan-skills [path]            # 扫描 Skill 目录的安全风险
 ```
 
 ## 配置

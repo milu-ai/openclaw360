@@ -4,7 +4,7 @@ import openclaw360
 
 
 def test_version():
-    assert openclaw360.__version__ == "0.1.0"
+    assert openclaw360.__version__ == "0.1.2"
 
 
 def test_all_exports_defined():

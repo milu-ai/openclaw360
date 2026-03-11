@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openclaw360"
+version = "0.1.0"
+description = "Runtime security skill for AI Agent frameworks"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "cryptography>=41.0",
+    "pydantic>=2.0",
+    "structlog>=23.0",
+    "regex>=2023.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "hypothesis>=6.0",
+]
+
+[project.scripts]
+openclaw360 = "openclaw360.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["openclaw360*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

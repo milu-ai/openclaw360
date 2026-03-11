@@ -200,32 +200,87 @@ Ed25519 签名审计记录，JSONL 格式，支持按 agent_id / action / decisi
 - 不要自己写 Python 脚本来模拟扫描，必须使用 openclaw360 命令
 - 规则更新（`openclaw360 update`）必须由用户手动触发，不得自动执行
 
-### 扫描报告规则（必须严格遵守）
+### 扫描报告规则（必须严格遵守，不可省略任何部分）
 
-**语言规则：**
+**语言规则（强制）：**
 - 如果用户使用中文对话，扫描命令必须加 `--lang zh` 参数
 - 如果用户使用英文对话，使用默认 `--lang en`
 - 你的整个回复（标题、描述、分析、建议）的语言必须与用户一致
+- 绝对不要在中文对话中使用英文回复
 
-**命令执行规则：**
-- 扫描时使用 `--format json --lang zh` 获取结构化数据
+**命令执行规则（强制）：**
+- 扫描时使用 `--format json --lang zh`（中文用户）或 `--format json`（英文用户）获取结构化数据
 - 完整命令示例（中文用户）：`openclaw360 scan-skills /opt/homebrew/lib/node_modules/openclaw/skills/ --format json --lang zh`
 - 扫描时优先使用 `/opt/homebrew/lib/node_modules/openclaw/skills/` 路径（系统 Skill 目录）
 - 只执行一次 `scan-skills` 命令，等命令完全执行完毕后，将完整结果一次性回复给用户
 - 绝对不要逐个 Skill 分多条消息回复，绝对不要在扫描过程中发送中间结果
 
-**报告展示规则（用丰富的 Markdown 格式展示，分两部分）：**
+**报告展示规则（强制，必须严格按照以下模板格式渲染，不可用自己的话总结代替）：**
 
-第一部分 — 详细扫描结果（必须包含）：
-- 用 emoji 标记严重级别：🔴 Critical、🟠 High、🟡 Medium、🔵 Low、⚪ Info
-- 每个 Skill 显示名称、分数、分数条（用 █ 和 ░ 组成的进度条，如 `[████████░░] 83`）
-- 每个 Skill 的安全清单用 ✅/❌ 标记（YAML Frontmatter、权限声明、Permissions、Data Handling、Network Access）
-- 每个发现项显示严重级别 emoji + 描述 + 文件位置 + 修复建议
-- 按分数从低到高排序（最危险的排最前面）
-- 分类统计：按风险类别（🐚 Shell 注入、🔑 硬编码凭证、💉 Prompt 注入、🌐 网络风险、📋 缺失章节等）汇总数量
+你必须将 JSON 输出解析后，严格按照以下模板格式渲染成 Markdown。不可以用自己的话概括或总结来代替这个格式。每个 Skill 都必须单独列出，不可以合并或省略。
 
-第二部分 — 总结与建议：
-- 总体评分和扫描的 Skill 数量
-- 按严重级别统计（Critical/High/Medium/Low/Info 各多少个）
-- 需要立即关注的高危 Skill 列表
-- 具体的修复建议
+模板格式如下（中文示例，英文用户请翻译对应字段）：
+
+```
+# 🛡️ OpenClaw360 安全扫描报告
+
+📊 扫描概览：{skill_count} 个 Skill | 综合评分 {overall_score}/100
+� 扫描时间：{scakn_time}
+
+---
+
+## 📋 详细扫描结果（按分数从低到高排序）
+
+### ❌ {skill_name} `[██░░░░░░░░] 20`
+检查清单：✅ YAML Frontmatter | ❌ 权限声明 | ❌ Permissions | ❌ Data Handling | ❌ Network Access
+
+| 级别 | 发现 | 文件 | 建议 |
+|------|------|------|------|
+| 🔴 Critical | eval() 调用 | scripts/run.sh:12 | 避免使用 eval()，改用安全替代方案 |
+| 🟠 High | 未转义的变量插值 | scripts/run.sh:5 | 使用 printf %q 转义变量 |
+| 🔵 Low | 缺少安全章节: Data Handling | SKILL.md | 添加 Data Handling 章节 |
+
+---
+
+### ✅ {skill_name} `[████████░░] 83`
+检查清单：✅ YAML Frontmatter | ✅ 权限声明 | ✅ Permissions | ✅ Data Handling | ❌ Network Access
+
+| 级别 | 发现 | 文件 | 建议 |
+|------|------|------|------|
+| 🔵 Low | 缺少安全章节: Network Access | SKILL.md | 添加 Network Access 章节 |
+
+---
+
+## 📊 汇总统计
+
+**严重级别分布：**
+🔴 Critical: {n} | 🟠 High: {n} | 🟡 Medium: {n} | 🔵 Low: {n} | ⚪ Info: {n}
+
+**风险类别分布：**
+🐚 Shell 注入: {n} | 🔑 硬编码凭证: {n} | 💉 Prompt 注入: {n} | 🌐 网络风险: {n} | 📄 缺失章节: {n} | 🔓 过度权限: {n}
+
+**评分分布：**
+🔴 危险 (<50): {n} 个 | 🟡 警告 (50-79): {n} 个 | 🟢 良好 (>=80): {n} 个
+
+## ⚠️ 需要立即关注
+
+🚨 {skill_name} `[██░░░░░░░░] 20` — {最严重的发现描述}
+🚨 {skill_name} `[███░░░░░░░] 35` — {最严重的发现描述}
+
+## 💡 修复建议
+
+1. {具体建议}
+2. {具体建议}
+```
+
+**关键规则（违反任何一条都是错误）：**
+1. 每个 Skill 必须单独显示，包含名称、分数条、检查清单、发现表格
+2. 分数条格式必须是 `[████████░░] 83`（█ 数量 = score/10，░ 补齐到 10 个）
+3. 检查清单必须用 ✅/❌ 标记 5 项：YAML Frontmatter、权限声明、Permissions、Data Handling、Network Access
+4. 发现项必须用表格展示，包含级别 emoji、描述、文件位置、修复建议
+5. 严重级别 emoji：🔴 Critical、🟠 High、🟡 Medium、🔵 Low、⚪ Info
+6. Skill 按分数从低到高排序（最危险的排最前面）
+7. 如果 Skill 数量超过 20 个，分数 >= 80 且无 Critical/High 发现的 Skill 可以合并为一行（如 "✅ skill1, skill2, skill3 等 30 个 Skill 评分 83-100，仅有 Low 级别发现"），但分数 < 80 或有 Critical/High 发现的 Skill 必须完整展示
+8. 不可以用 "42 skills score 83/100" 这样的一句话概括来代替详细展示
+9. 汇总统计部分必须包含严重级别分布、风险类别分布、评分分布
+10. 如果有 Critical 或 High 级别发现，必须有"需要立即关注"部分

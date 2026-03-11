@@ -1210,12 +1210,14 @@ class TestReportGenerator:
         assert "=== Skill Security Scan Report ===" in output
         assert "Scan Time: 2025-01-15T10:00:00+00:00" in output
         assert "Skills Scanned: 1" in output
-        assert "Overall Score: 85.0/100" in output
+        assert "Overall Score:" in output
+        assert "85" in output
 
     def test_to_text_contains_skill_section(self, generator: ReportGenerator, sample_report: ScanReport) -> None:
         output = generator.to_text(sample_report)
 
-        assert "test-skill (Score: 85/100)" in output
+        assert "test-skill" in output
+        assert "85" in output
         assert "[HIGH] Unescaped variable interpolation" in output
         assert "File: run.sh" in output
         assert "Line: 5" in output
@@ -1463,6 +1465,7 @@ class TestReportGeneratorI18n:
         assert "Scan Time:" in text
         assert "Summary" in text
         assert "Details" in text
+        assert "Checklist:" in text
 
     def test_text_report_chinese(self) -> None:
         report = self._make_report()
@@ -1472,6 +1475,7 @@ class TestReportGeneratorI18n:
         assert "扫描时间:" in text
         assert "摘要" in text
         assert "详情" in text
+        assert "检查清单:" in text
 
     def test_chinese_finding_translation(self) -> None:
         report = self._make_report()

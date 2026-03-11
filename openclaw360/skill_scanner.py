@@ -49,6 +49,9 @@ _TRANSLATIONS: dict[str, dict[str, str]] = {
         "missing_perm_decl": "Missing permission declaration: metadata.clawdbot.requires not found",
         "add_section_rec": "Add a '{section}' section to SKILL.md to document security considerations.",
         "add_requires_rec": "Add a 'requires' section to metadata.clawdbot to declare needed permissions.",
+        "by_category": "By Category",
+        "checklist": "Checklist",
+        "checklist_perms": "Permission Decl",
     },
     "zh": {
         "report_title": "=== Skill 安全扫描报告 ===",
@@ -75,6 +78,9 @@ _TRANSLATIONS: dict[str, dict[str, str]] = {
         "missing_perm_decl": "缺少权限声明：未找到 metadata.clawdbot.requires",
         "add_section_rec": "请在 SKILL.md 中添加 '{section}' 章节以说明安全相关信息。",
         "add_requires_rec": "请在 metadata.clawdbot 中添加 'requires' 字段以声明所需权限。",
+        "by_category": "按类别",
+        "checklist": "检查清单",
+        "checklist_perms": "权限声明",
     },
 }
 
@@ -966,6 +972,12 @@ class ReportGenerator:
         raw = dataclasses.asdict(report)
         return json.dumps(raw, default=_convert, indent=2, ensure_ascii=False)
 
+    def _score_bar(self, score: int) -> str:
+        """Render a visual score bar like [████████░░] 80."""
+        filled = score // 10
+        empty = 10 - filled
+        return f"[{'█' * filled}{'░' * empty}] {score}"
+
     def _build_summary(self, report: ScanReport, lang: str = "en") -> list[str]:
         """Build a concise summary section for the text report."""
         lines: list[str] = []
@@ -981,17 +993,51 @@ class ReportGenerator:
 
         lines.append("")
         lines.append(f"--- {_t(lang, 'summary')} ---")
+
+        # Score distribution with visual bar
         lines.append(
             f"  {_t(lang, 'score_distribution')}: "
-            f"{len(critical_skills)} {_t(lang, 'critical_label')} (<50) | "
-            f"{len(warning_skills)} {_t(lang, 'warning_label')} (50-79) | "
-            f"{len(good_skills)} {_t(lang, 'good_label')} (>=80)"
+            f"🔴 {len(critical_skills)} {_t(lang, 'critical_label')} (<50) | "
+            f"🟡 {len(warning_skills)} {_t(lang, 'warning_label')} (50-79) | "
+            f"🟢 {len(good_skills)} {_t(lang, 'good_label')} (>=80)"
         )
         if best:
-            lines.append(f"  {_t(lang, 'best')}:  {best.skill_name} ({best.score}/100)")
+            lines.append(f"  {_t(lang, 'best')}:  {best.skill_name} {self._score_bar(best.score)}")
         if worst and worst.skill_name != (best.skill_name if best else ""):
-            lines.append(f"  {_t(lang, 'worst')}: {worst.skill_name} ({worst.score}/100)")
-        lines.append(f"  {_t(lang, 'findings')}: {stats.critical} critical, {stats.high} high, {stats.medium} medium, {stats.low} low, {stats.info} info")
+            lines.append(f"  {_t(lang, 'worst')}: {worst.skill_name} {self._score_bar(worst.score)}")
+        lines.append(
+            f"  {_t(lang, 'findings')}: "
+            f"🔴 {stats.critical} critical, "
+            f"🟠 {stats.high} high, "
+            f"🟡 {stats.medium} medium, "
+            f"🔵 {stats.low} low, "
+            f"⚪ {stats.info} info"
+        )
+
+        # Category breakdown
+        category_counts: dict[str, int] = {}
+        for result in report.results:
+            for f in result.findings:
+                cat = f.category.value
+                category_counts[cat] = category_counts.get(cat, 0) + 1
+        if category_counts:
+            lines.append("")
+            lines.append(f"  {_t(lang, 'by_category')}:")
+            cat_labels = {
+                "shell_injection": ("🐚", "Shell Injection" if lang == "en" else "Shell 注入"),
+                "data_exfiltration": ("📤", "Data Exfiltration" if lang == "en" else "数据外泄"),
+                "hardcoded_credential": ("🔑", "Hardcoded Credentials" if lang == "en" else "硬编码凭据"),
+                "excessive_permission": ("🔓", "Excessive Permissions" if lang == "en" else "过度权限"),
+                "prompt_injection": ("💉", "Prompt Injection" if lang == "en" else "提示词注入"),
+                "missing_section": ("📄", "Missing Sections" if lang == "en" else "缺少章节"),
+                "network_risk": ("🌐", "Network Risk" if lang == "en" else "网络风险"),
+                "external_write": ("💾", "External Write" if lang == "en" else "外部写入"),
+                "parse_error": ("⚠️", "Parse Error" if lang == "en" else "解析错误"),
+                "file_error": ("📁", "File Error" if lang == "en" else "文件错误"),
+            }
+            for cat, count in sorted(category_counts.items(), key=lambda x: -x[1]):
+                icon, label = cat_labels.get(cat, ("•", cat))
+                lines.append(f"    {icon} {label}: {count}")
 
         # Top issues quick list
         if critical_skills:
@@ -1001,9 +1047,12 @@ class ReportGenerator:
                 critical_findings = [f for f in r.findings if f.severity == FindingSeverity.CRITICAL]
                 desc = critical_findings[0].description if critical_findings else _t(lang, "multiple_issues")
                 desc = _translate_finding(desc, lang)
-                lines.append(f"    - {r.skill_name} ({r.score}/100): {desc}")
+                lines.append(f"    🚨 {r.skill_name} {self._score_bar(r.score)}: {desc}")
 
         return lines
+
+    def _checklist_icon(self, val: bool) -> str:
+        return "✅" if val else "❌"
 
     def to_text(self, report: ScanReport, lang: str = "en") -> str:
         """Format a ScanReport as human-readable text with summary."""
@@ -1011,7 +1060,7 @@ class ReportGenerator:
         lines.append(_t(lang, "report_title"))
         lines.append(f"{_t(lang, 'scan_time')}: {report.scan_time}")
         lines.append(f"{_t(lang, 'skills_scanned')}: {report.skill_count}")
-        lines.append(f"{_t(lang, 'overall_score')}: {report.overall_score:.1f}/100")
+        lines.append(f"{_t(lang, 'overall_score')}: {self._score_bar(int(report.overall_score))}")
 
         # Add summary section
         lines.extend(self._build_summary(report, lang=lang))
@@ -1021,7 +1070,20 @@ class ReportGenerator:
         lines.append(f"--- {_t(lang, 'details')} ---")
         for result in report.results:
             lines.append("")
-            lines.append(f"  {result.skill_name} ({_t(lang, 'score')}: {result.score}/100)")
+            # Score with visual bar
+            lines.append(f"  {result.skill_name} {self._score_bar(result.score)}")
+
+            # Checklist
+            cl = result.checklist
+            cl_items = [
+                (self._checklist_icon(cl.has_valid_frontmatter), "YAML Frontmatter"),
+                (self._checklist_icon(cl.has_permission_declaration), _t(lang, "checklist_perms")),
+                (self._checklist_icon(cl.has_permissions_section), "Permissions"),
+                (self._checklist_icon(cl.has_data_handling_section), "Data Handling"),
+                (self._checklist_icon(cl.has_network_access_section), "Network Access"),
+            ]
+            lines.append(f"    {_t(lang, 'checklist')}: {' | '.join(f'{icon} {name}' for icon, name in cl_items)}")
+
             if result.parse_error:
                 lines.append(f"    {_t(lang, 'parse_error')}: {result.parse_error}")
             for finding in result.findings:

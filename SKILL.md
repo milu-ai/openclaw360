@@ -174,7 +174,8 @@ openclaw360 scan-skills --min-score 60
 - 记住第 1 步确定的命令路径，后续所有命令都用同一个路径
 - 扫描结果中的凭据信息已自动脱敏，不会泄露原始值
 - 不要自己写 Python 脚本来模拟扫描，必须使用 openclaw360 命令
-- 展示扫描结果时，使用 `--format json` 获取数据，然后用用户的语言整理成易读的报告
+- 展示扫描结果时，必须使用用户的语言。如果用户使用中文对话，你的整个回复（包括标题、描述、建议）都必须用中文
 - 如果用户使用中文，扫描时加 `--lang zh` 参数输出中文报告；英文用户用 `--lang en`（默认）
+- 使用 `--format text --lang zh` 直接获取中文报告展示给用户，或使用 `--format json` 获取数据后用中文整理
 - 扫描时优先使用 `/opt/homebrew/lib/node_modules/openclaw/skills/` 路径（系统 Skill 目录）
 - 规则更新（`openclaw360 update`）必须由用户手动触发，不得自动执行

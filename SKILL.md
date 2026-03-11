@@ -208,13 +208,24 @@ Ed25519 签名审计记录，JSONL 格式，支持按 agent_id / action / decisi
 - 你的整个回复（标题、描述、分析、建议）的语言必须与用户一致
 
 **命令执行规则：**
-- 扫描时必须使用 `--format text` 格式（不要用 `--format json`）
-- 完整命令示例（中文用户）：`openclaw360 scan-skills /opt/homebrew/lib/node_modules/openclaw/skills/ --format text --lang zh`
+- 扫描时使用 `--format json --lang zh` 获取结构化数据
+- 完整命令示例（中文用户）：`openclaw360 scan-skills /opt/homebrew/lib/node_modules/openclaw/skills/ --format json --lang zh`
 - 扫描时优先使用 `/opt/homebrew/lib/node_modules/openclaw/skills/` 路径（系统 Skill 目录）
-
-**报告展示规则：**
 - 只执行一次 `scan-skills` 命令，等命令完全执行完毕后，将完整结果一次性回复给用户
-- 绝对不要逐个 Skill 分多条消息回复
-- 命令输出已经包含分数条、分类统计、安全清单等丰富格式，直接展示给用户即可
-- 不要自己重新整理或改写命令输出，直接把 `--format text` 的输出作为代码块展示
-- 可以在代码块之后添加简短的中文总结和建议
+- 绝对不要逐个 Skill 分多条消息回复，绝对不要在扫描过程中发送中间结果
+
+**报告展示规则（用丰富的 Markdown 格式展示，分两部分）：**
+
+第一部分 — 详细扫描结果（必须包含）：
+- 用 emoji 标记严重级别：🔴 Critical、🟠 High、🟡 Medium、🔵 Low、⚪ Info
+- 每个 Skill 显示名称、分数、分数条（用 █ 和 ░ 组成的进度条，如 `[████████░░] 83`）
+- 每个 Skill 的安全清单用 ✅/❌ 标记（YAML Frontmatter、权限声明、Permissions、Data Handling、Network Access）
+- 每个发现项显示严重级别 emoji + 描述 + 文件位置 + 修复建议
+- 按分数从低到高排序（最危险的排最前面）
+- 分类统计：按风险类别（🐚 Shell 注入、🔑 硬编码凭证、💉 Prompt 注入、🌐 网络风险、📋 缺失章节等）汇总数量
+
+第二部分 — 总结与建议：
+- 总体评分和扫描的 Skill 数量
+- 按严重级别统计（Critical/High/Medium/Low/Info 各多少个）
+- 需要立即关注的高危 Skill 列表
+- 具体的修复建议

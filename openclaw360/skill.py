@@ -123,6 +123,30 @@ class OpenClaw360Skill:
             logger.error("Prompt security check failed (%s). Degrading to ALLOW.", exc)
             result = _degraded_allow("Prompt security check failed")
 
+        # DLP scan on user input — detect sensitive data in prompts
+        try:
+            dlp_matches = self.dlp_engine.scan_text(prompt)
+            if dlp_matches:
+                data_types = list({m.data_type.value for m in dlp_matches})
+                dlp_result = SecurityResult(
+                    decision=Decision.BLOCK,
+                    risk_score=1.0,
+                    threats=data_types,
+                    reason=f"Sensitive data detected in prompt: {', '.join(data_types)}",
+                    metadata={"match_count": len(dlp_matches), "data_types": data_types},
+                )
+                # Take the stricter result
+                if dlp_result.risk_score > result.risk_score:
+                    result = SecurityResult(
+                        decision=dlp_result.decision,
+                        risk_score=dlp_result.risk_score,
+                        threats=list(set(result.threats + dlp_result.threats)),
+                        reason=dlp_result.reason,
+                        metadata={**result.metadata, **dlp_result.metadata},
+                    )
+        except Exception as exc:
+            logger.error("DLP check on prompt failed (%s). Continuing with prompt result.", exc)
+
         # Build and log audit event (best-effort)
         prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
         source = context.get("source", "user")

@@ -700,29 +700,111 @@ class NetworkAnalyzer:
         return findings
 
 
+
 class SecretDetector:
     """Hardcoded credential detector.
 
     Reuses DLPEngine's SENSITIVE_PATTERNS to detect API keys, passwords,
     tokens, SSH private keys, AWS access keys, and database connection strings.
+
+    Context-aware severity: credentials found in SKILL.md documentation are
+    likely author-provided example/placeholder data and receive reduced
+    severity (INFO for obvious examples, LOW for ambiguous cases) compared
+    to credentials in scripts or config files (CRITICAL).
     """
+
+    # Patterns that indicate a value is example/placeholder data
+    _EXAMPLE_INDICATORS = re.compile(
+        r"(?:example|placeholder|your[_\-]?|sample|test|dummy|fake|demo|"
+        r"xxx|foo|bar|changeme|replace[_\-]?me|todo|fixme)",
+        re.IGNORECASE,
+    )
+
+    # Common example email local parts and domains
+    _EXAMPLE_EMAIL_PARTS = {
+        "you", "your", "user", "example", "test", "demo", "sample",
+        "recipient", "sender", "john", "jane", "alice", "bob",
+        "someone", "anybody", "nobody", "admin", "info", "mail",
+        "name", "email", "myemail", "me", "person",
+    }
+    _EXAMPLE_EMAIL_DOMAINS = {
+        "example.com", "example.org", "example.net", "test.com",
+        "gmail.com", "mail.com", "email.com", "domain.com",
+        "yourdomain.com", "company.com", "placeholder.com",
+    }
+
+    # Common example phone prefixes (US 555, Chinese test numbers)
+    _EXAMPLE_PHONE_PREFIXES = ("1555", "+1555", "555", "+86555")
 
     def __init__(self) -> None:
         from openclaw360.dlp_engine import DLPEngine
 
         self._dlp = DLPEngine(None)
 
+    def _is_example_value(self, raw_value: str, data_type_value: str) -> bool:
+        """Check if a detected value looks like example/placeholder data.
+
+        Args:
+            raw_value: The original (unmasked) value detected.
+            data_type_value: The SensitiveDataType.value string.
+
+        Returns:
+            True if the value appears to be example/demo data.
+        """
+        val_lower = raw_value.lower().strip()
+
+        # Check generic example indicators
+        if self._EXAMPLE_INDICATORS.search(val_lower):
+            return True
+
+        # Email-specific checks
+        if data_type_value == "email":
+            parts = val_lower.split("@")
+            if len(parts) == 2:
+                local, domain = parts
+                if local in self._EXAMPLE_EMAIL_PARTS:
+                    return True
+                if domain in self._EXAMPLE_EMAIL_DOMAINS:
+                    return True
+
+        # Phone-specific checks
+        if data_type_value == "phone_number":
+            digits = re.sub(r"[\s\-\+]", "", val_lower)
+            for prefix in self._EXAMPLE_PHONE_PREFIXES:
+                clean_prefix = re.sub(r"[\s\-\+]", "", prefix)
+                if digits.startswith(clean_prefix):
+                    return True
+
+        # IP address: multicast (224-239.x.x.x) or documentation ranges
+        if data_type_value == "ip_address":
+            first_octet = val_lower.split(".")[0]
+            try:
+                if 224 <= int(first_octet) <= 239:
+                    return True  # Multicast range, not a real credential
+            except ValueError:
+                pass
+
+        return False
+
+    def _is_skill_md(self, file_path: Path) -> bool:
+        """Check if the file is a SKILL.md documentation file."""
+        return file_path.name.lower() == "skill.md"
+
     def detect(self, file_path: Path) -> list[ScanFinding]:
         """Detect hardcoded credentials in a file.
+
+        Context-aware severity assignment:
+        - SKILL.md + example data → INFO (no score penalty)
+        - SKILL.md + ambiguous data → LOW (minor penalty)
+        - Scripts/config files → CRITICAL (full penalty)
 
         Args:
             file_path: Path to the file to scan.
 
         Returns:
-            List of ScanFinding with severity=CRITICAL and masked descriptions.
+            List of ScanFinding with context-appropriate severity.
         """
         findings: list[ScanFinding] = []
-        # Compute relative path from parent directory
         relative_path = str(file_path.relative_to(file_path.parent.parent)) if len(file_path.parts) > 1 else file_path.name
 
         try:
@@ -733,6 +815,8 @@ class SecretDetector:
         matches = self._dlp.scan_text(content)
         if not matches:
             return findings
+
+        is_doc = self._is_skill_md(file_path)
 
         # Pre-compute line start offsets for line number calculation
         line_starts = [0]
@@ -751,21 +835,47 @@ class SecretDetector:
             else:
                 line_number = len(line_starts)
 
-            # Mask the value: first 4 + "***" + last 4 for len > 8, else all "*"
             masked = match.masked_value
+
+            # Determine severity based on file context
+            if is_doc:
+                # Extract raw value from content for example detection
+                raw_value = content[match.location[0]:match.location[1]]
+                is_example = self._is_example_value(raw_value, match.data_type.value)
+
+                if is_example:
+                    severity = FindingSeverity.INFO
+                    rec = (
+                        "Documentation example data detected. Consider replacing "
+                        "with generic placeholders like <your-email> or <phone> "
+                        "to avoid scanner false positives."
+                    )
+                else:
+                    severity = FindingSeverity.LOW
+                    rec = (
+                        "Credential found in SKILL.md documentation. If this is "
+                        "example data, replace with generic placeholders like "
+                        "<your-email>. If real, remove immediately."
+                    )
+            else:
+                severity = FindingSeverity.CRITICAL
+                rec = "Use environment variables or a secrets manager instead of hardcoding credentials."
+                is_example = False
 
             findings.append(
                 ScanFinding(
-                    severity=FindingSeverity.CRITICAL,
+                    severity=severity,
                     category=FindingCategory.HARDCODED_CREDENTIAL,
                     description=f"Hardcoded {match.data_type.value} detected: {masked}",
                     file_path=relative_path,
                     line_number=line_number,
-                    recommendation="Use environment variables or a secrets manager instead of hardcoding credentials.",
+                    recommendation=rec,
+                    metadata={"is_example_data": is_example, "in_documentation": is_doc},
                 )
             )
 
         return findings
+
 
 
 class PermissionChecker:

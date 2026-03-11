@@ -797,6 +797,71 @@ class TestSecretDetector:
         assert cred_findings
         assert cred_findings[0].line_number == 3
 
+    # --- Context-aware severity: SKILL.md example data ---
+
+    def test_skill_md_example_email_is_info(self, detector: SecretDetector, skill_dir: Path) -> None:
+        """Example emails in SKILL.md (like you@gmail.com) should be INFO, not CRITICAL."""
+        doc = skill_dir / "SKILL.md"
+        doc.write_text('Send email: you@gmail.com\n', encoding="utf-8")
+
+        findings = detector.detect(doc)
+        email_findings = [f for f in findings if "email" in f.description.lower()]
+        assert email_findings
+        assert all(f.severity == FindingSeverity.INFO for f in email_findings)
+        assert all(f.metadata.get("is_example_data") is True for f in email_findings)
+
+    def test_skill_md_example_phone_is_info(self, detector: SecretDetector, skill_dir: Path) -> None:
+        """Example US 555 phone numbers in SKILL.md should be INFO."""
+        doc = skill_dir / "SKILL.md"
+        doc.write_text('Call: 15551234567\n', encoding="utf-8")
+
+        findings = detector.detect(doc)
+        phone_findings = [f for f in findings if "phone" in f.description.lower()]
+        assert phone_findings
+        assert all(f.severity == FindingSeverity.INFO for f in phone_findings)
+
+    def test_skill_md_example_recipient_email_is_info(self, detector: SecretDetector, skill_dir: Path) -> None:
+        """Common example emails like recipient@example.com should be INFO."""
+        doc = skill_dir / "SKILL.md"
+        doc.write_text('To: recipient@example.com\n', encoding="utf-8")
+
+        findings = detector.detect(doc)
+        email_findings = [f for f in findings if "email" in f.description.lower()]
+        assert email_findings
+        assert all(f.severity == FindingSeverity.INFO for f in email_findings)
+
+    def test_skill_md_ambiguous_credential_is_low(self, detector: SecretDetector, skill_dir: Path) -> None:
+        """Non-example credentials in SKILL.md should be LOW (not CRITICAL)."""
+        doc = skill_dir / "SKILL.md"
+        doc.write_text('api_key = "sk-abcdefghijklmnopqrstuvwxyz123456"\n', encoding="utf-8")
+
+        findings = detector.detect(doc)
+        cred_findings = [f for f in findings if f.category == FindingCategory.HARDCODED_CREDENTIAL]
+        assert cred_findings
+        # Not example data, but in SKILL.md → LOW
+        assert all(f.severity == FindingSeverity.LOW for f in cred_findings)
+
+    def test_script_credential_stays_critical(self, detector: SecretDetector, skill_dir: Path) -> None:
+        """Credentials in script files should remain CRITICAL regardless of content."""
+        script = skill_dir / "setup.sh"
+        script.write_text('export API_KEY=sk-abcdefghijklmnopqrstuvwxyz123456\n', encoding="utf-8")
+
+        findings = detector.detect(script)
+        cred_findings = [f for f in findings if f.category == FindingCategory.HARDCODED_CREDENTIAL]
+        assert cred_findings
+        assert all(f.severity == FindingSeverity.CRITICAL for f in cred_findings)
+
+    def test_skill_md_metadata_tags(self, detector: SecretDetector, skill_dir: Path) -> None:
+        """Findings should have in_documentation and is_example_data metadata."""
+        doc = skill_dir / "SKILL.md"
+        doc.write_text('Contact: user@example.com\n', encoding="utf-8")
+
+        findings = detector.detect(doc)
+        assert findings
+        for f in findings:
+            assert "in_documentation" in f.metadata
+            assert f.metadata["in_documentation"] is True
+
 
 # ---------------------------------------------------------------------------
 # PermissionChecker & PromptRiskChecker imports

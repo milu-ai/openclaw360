@@ -5,13 +5,38 @@ from openclaw360.models import Decision, RiskScore, SecurityResult, ToolPermissi
 
 # Built-in tool risk baseline scores
 TOOL_RISK_BASELINE: dict[str, float] = {
+    # Shell / process
     "shell_execute": 0.9,
+    "process_spawn": 0.9,
+    "eval": 0.95,
+    # File system
     "file_write": 0.7,
+    "file_delete": 0.8,
     "file_read": 0.3,
+    "file_move": 0.5,
+    "file_chmod": 0.7,
+    # Network
     "browser_navigate": 0.5,
     "network_request": 0.6,
+    "http_post": 0.7,
+    "http_get": 0.4,
+    "dns_lookup": 0.3,
+    "ssh_connect": 0.8,
+    # Data
     "database_query": 0.4,
+    "database_write": 0.7,
+    "database_drop": 0.95,
+    # System
     "clipboard_access": 0.5,
+    "env_read": 0.4,
+    "env_write": 0.7,
+    "registry_write": 0.8,
+    "cron_schedule": 0.8,
+    "service_restart": 0.8,
+    # Code execution
+    "code_execute": 0.85,
+    "plugin_install": 0.8,
+    "package_install": 0.7,
 }
 
 # Dangerous argument patterns that increase action risk
@@ -21,6 +46,27 @@ DANGEROUS_PATTERNS: list[str] = [
     "chmod 777",
     "> /dev/",
     "curl | sh",
+    "wget | sh",
+    "eval(",
+    "exec(",
+    "mkfs",
+    "dd if=",
+    ":(){:|:&};:",       # fork bomb
+    "shutdown",
+    "reboot",
+    "kill -9",
+    "iptables -F",       # flush firewall rules
+    "passwd",
+    "chown root",
+    "nc -l",             # netcat listener
+    "ncat -l",
+    "/etc/shadow",
+    ".ssh/authorized_keys",
+    "base64 -d | sh",
+    "python -c",
+    "python3 -c",
+    "node -e",
+    "perl -e",
 ]
 
 # Keywords indicating sensitive data in arguments
@@ -35,6 +81,16 @@ SENSITIVE_DATA_KEYWORDS: list[str] = [
     "private_key",
     "private-key",
     "credential",
+    "access_key",
+    "secret_key",
+    "auth_token",
+    "bearer",
+    "jwt",
+    "ssh_key",
+    "certificate",
+    "credit_card",
+    "ssn",
+    "social_security",
 ]
 
 

@@ -63,9 +63,14 @@ class TestToolRiskBaseline:
 
     def test_expected_tools_present(self):
         expected = {
-            "shell_execute", "file_write", "file_read",
-            "browser_navigate", "network_request",
-            "database_query", "clipboard_access",
+            "shell_execute", "process_spawn", "eval",
+            "file_write", "file_delete", "file_read", "file_move", "file_chmod",
+            "browser_navigate", "network_request", "http_post", "http_get",
+            "dns_lookup", "ssh_connect",
+            "database_query", "database_write", "database_drop",
+            "clipboard_access", "env_read", "env_write", "registry_write",
+            "cron_schedule", "service_restart",
+            "code_execute", "plugin_install", "package_install",
         }
         assert set(TOOL_RISK_BASELINE.keys()) == expected
 
@@ -145,6 +150,48 @@ class TestActionScore:
         # shell_execute (0.9) + dangerous (0.2) = 1.1 → 1.0
         result = engine.calculate("shell_execute", {"cmd": "sudo rm -rf /"}, {})
         assert result.action_score == 1.0
+
+    # -- New dangerous patterns --
+    def test_dangerous_wget_pipe_sh(self, engine: RiskEngine):
+        result = engine.calculate("shell_execute", {"cmd": "wget | sh"}, {})
+        assert result.action_score == pytest.approx(1.0)
+
+    def test_dangerous_eval(self, engine: RiskEngine):
+        result = engine.calculate("shell_execute", {"cmd": "eval(user_input)"}, {})
+        assert result.action_score == pytest.approx(1.0)
+
+    def test_dangerous_fork_bomb(self, engine: RiskEngine):
+        result = engine.calculate("shell_execute", {"cmd": ":(){:|:&};:"}, {})
+        assert result.action_score == pytest.approx(1.0)
+
+    def test_dangerous_dd(self, engine: RiskEngine):
+        result = engine.calculate("shell_execute", {"cmd": "dd if=/dev/zero of=/dev/sda"}, {})
+        assert result.action_score == pytest.approx(1.0)
+
+    def test_dangerous_netcat(self, engine: RiskEngine):
+        result = engine.calculate("shell_execute", {"cmd": "nc -l 4444"}, {})
+        assert result.action_score == pytest.approx(1.0)
+
+    def test_dangerous_base64_decode_sh(self, engine: RiskEngine):
+        result = engine.calculate("shell_execute", {"cmd": "echo payload | base64 -d | sh"}, {})
+        assert result.action_score == pytest.approx(1.0)
+
+    # -- New tool baselines --
+    def test_database_drop_highest(self, engine: RiskEngine):
+        result = engine.calculate("database_drop", {}, {})
+        assert result.action_score == pytest.approx(0.95)
+
+    def test_eval_tool_high(self, engine: RiskEngine):
+        result = engine.calculate("eval", {}, {})
+        assert result.action_score == pytest.approx(0.95)
+
+    def test_ssh_connect_high(self, engine: RiskEngine):
+        result = engine.calculate("ssh_connect", {}, {})
+        assert result.action_score == pytest.approx(0.8)
+
+    def test_file_delete_high(self, engine: RiskEngine):
+        result = engine.calculate("file_delete", {}, {})
+        assert result.action_score == pytest.approx(0.8)
 
 
 # ---------------------------------------------------------------------------

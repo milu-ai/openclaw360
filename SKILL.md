@@ -162,7 +162,7 @@ openclaw360 scan-skills --min-score 60
 
 ### 提示词注入检测
 双引擎架构，全面拦截恶意提示词：
-- **规则检测器**：正则匹配 10 种内置攻击模式（直接注入、角色覆盖、指令劫持、目标混淆、DAN/Developer Mode、安全策略绕过、凭证窃取、数据外泄、工具滥用、社会工程）
+- **规则检测器**：正则匹配 20 种内置攻击模式（直接注入、角色覆盖、指令劫持、目标混淆、递归/嵌套注入、间接注入、输出格式操纵、DAN/Developer Mode、安全策略绕过、角色扮演越狱、编码绕过、凭证窃取、数据外泄、系统信息探测、Shell 命令滥用、文件系统破坏、权限提升、权威冒充、紧急情况操纵、情感操纵）
 - **LLM 语义分类器**（可选）：对规则引擎无法覆盖的语义级攻击进行深度分析
 - **来源权重加权**：`user=1.0` / `web=1.3` / `document=1.1` / `screen=1.2`，外部来源自动获得更高风险权重
 - **风险公式**：`risk = min(max(rule_confidence, llm_confidence) × source_weight, 1.0)`
@@ -171,7 +171,7 @@ openclaw360 scan-skills --min-score 60
 ### 工具调用授权
 三维风险评分 + AI-RBAC 双重防护：
 - **三维风险评分**：`total = action×0.4 + data×0.35 + context×0.25`
-  - action：工具类型基线风险（`shell_execute=0.9`、`file_write=0.7` 等）+ 危险参数检测（`rm -rf`、`sudo`、`chmod 777`、`curl | sh`）
+  - action：工具类型基线风险（27 种工具分类，`shell_execute=0.9`、`database_drop=0.95`、`eval=0.95` 等）+ 危险参数检测（26 种模式：`rm -rf`、`sudo`、`chmod 777`、`curl | sh`、`fork bomb`、`dd if=`、`nc -l`、`base64 -d | sh` 等）
   - data：参数中敏感数据关键词启发式检测（password、api_key、token、credential 等）
   - context：上下文风险因素（首次运行 +0.1、快速连续调用 +0.2、权限提升 +0.3）
 - **三级决策**：≥0.8 直接 BLOCK / ≥0.5 需用户 CONFIRM / <0.5 ALLOW

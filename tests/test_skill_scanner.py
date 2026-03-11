@@ -279,6 +279,59 @@ class TestSkillDiscovery:
         assert "s1" in names
         assert "s2" in names
 
+    def test_discover_recursive_nested_skills(self, tmp_path: Path) -> None:
+        """Skills nested 2+ levels deep should be found via recursive search."""
+        base = tmp_path / "skills"
+        base.mkdir()
+        # Nested: skills/category/skill-a/SKILL.md
+        (base / "category").mkdir()
+        (base / "category" / "skill-a").mkdir()
+        (base / "category" / "skill-a" / "SKILL.md").write_text("---\nk: v\n---\n\n## Instructions\nHi\n")
+
+        discovery = SkillDiscovery()
+        result = discovery.discover_skills(paths=[str(base)])
+
+        names = [p.name for p in result]
+        assert "skill-a" in names
+
+    def test_discover_path_is_skill_directory(self, tmp_path: Path) -> None:
+        """If the path itself contains SKILL.md, treat it as a single Skill."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("---\nk: v\n---\n\n## Instructions\nHi\n")
+
+        discovery = SkillDiscovery()
+        result = discovery.discover_skills(paths=[str(skill_dir)])
+
+        assert len(result) == 1
+        assert result[0].name == "my-skill"
+
+    def test_discover_case_insensitive_skill_md(self, tmp_path: Path) -> None:
+        """skill.md (lowercase) should also be discovered."""
+        base = tmp_path / "skills"
+        base.mkdir()
+        (base / "lower-case").mkdir()
+        (base / "lower-case" / "skill.md").write_text("---\nk: v\n---\n\n## Instructions\nHi\n")
+
+        discovery = SkillDiscovery()
+        result = discovery.discover_skills(paths=[str(base)])
+
+        names = [p.name for p in result]
+        assert "lower-case" in names
+
+    def test_discover_no_duplicates(self, tmp_path: Path) -> None:
+        """Same path passed twice should not produce duplicates."""
+        base = tmp_path / "skills"
+        base.mkdir()
+        (base / "skill-a").mkdir()
+        (base / "skill-a" / "SKILL.md").write_text("---\nk: v\n---\n\n## Instructions\nHi\n")
+
+        discovery = SkillDiscovery()
+        result = discovery.discover_skills(paths=[str(base), str(base)])
+
+        names = [p.name for p in result]
+        assert names.count("skill-a") == 1
+
 
 # ---------------------------------------------------------------------------
 # Imports for new analyzer classes

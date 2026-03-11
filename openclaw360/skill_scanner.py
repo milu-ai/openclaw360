@@ -389,6 +389,11 @@ class SkillDiscovery:
         When *paths* is ``None``, the default scan locations are used:
         ``~/.openclaw/skills/`` and ``<cwd>/skills/``.
 
+        Discovery logic (for each base path):
+        1. If the base path itself contains ``SKILL.md``, treat it as a single Skill.
+        2. Otherwise, scan immediate children for directories containing ``SKILL.md``.
+        3. If no immediate children match, recursively search up to 3 levels deep.
+
         Args:
             paths: Explicit scan paths. ``None`` uses defaults.
 
@@ -407,16 +412,85 @@ class SkillDiscovery:
             resolved_paths = list(paths)
 
         skill_dirs: list[Path] = []
+        seen: set[Path] = set()
+
         for base in resolved_paths:
             p = Path(base)
             if not p.exists() or not p.is_dir():
                 raise ScanError(f"Path does not exist or is not a directory: {base}")
 
-            for child in sorted(p.iterdir()):
-                if child.is_dir() and (child / "SKILL.md").exists():
-                    skill_dirs.append(child)
+            # Case 1: The path itself is a Skill directory
+            if self._has_skill_md(p):
+                resolved = p.resolve()
+                if resolved not in seen:
+                    seen.add(resolved)
+                    skill_dirs.append(p)
+                continue
 
-        return skill_dirs
+            # Case 2: Check immediate children
+            immediate: list[Path] = []
+            for child in sorted(p.iterdir()):
+                if child.is_dir() and self._has_skill_md(child):
+                    resolved = child.resolve()
+                    if resolved not in seen:
+                        seen.add(resolved)
+                        immediate.append(child)
+
+            if immediate:
+                skill_dirs.extend(immediate)
+                continue
+
+            # Case 3: Recursive search (up to 3 levels deep)
+            self._discover_recursive(p, skill_dirs, seen, max_depth=3, current_depth=0)
+
+        return sorted(skill_dirs, key=lambda d: d.name)
+
+    @staticmethod
+    def _has_skill_md(directory: Path) -> bool:
+        """Check if a directory contains a SKILL.md file (case-insensitive)."""
+        try:
+            for f in directory.iterdir():
+                if f.is_file() and f.name.lower() == "skill.md":
+                    return True
+        except PermissionError:
+            pass
+        return False
+
+    @staticmethod
+    def _get_skill_md(directory: Path) -> Path | None:
+        """Get the SKILL.md path (case-insensitive) or None."""
+        try:
+            for f in directory.iterdir():
+                if f.is_file() and f.name.lower() == "skill.md":
+                    return f
+        except PermissionError:
+            pass
+        return None
+
+    def _discover_recursive(
+        self,
+        directory: Path,
+        skill_dirs: list[Path],
+        seen: set[Path],
+        max_depth: int,
+        current_depth: int,
+    ) -> None:
+        """Recursively discover Skill directories up to max_depth."""
+        if current_depth >= max_depth:
+            return
+        try:
+            for child in sorted(directory.iterdir()):
+                if not child.is_dir():
+                    continue
+                if self._has_skill_md(child):
+                    resolved = child.resolve()
+                    if resolved not in seen:
+                        seen.add(resolved)
+                        skill_dirs.append(child)
+                else:
+                    self._discover_recursive(child, skill_dirs, seen, max_depth, current_depth + 1)
+        except PermissionError:
+            pass
 
 
 class ScriptAnalyzer:
@@ -1188,7 +1262,7 @@ class SkillScanner:
         parse_error: str | None = None
 
         # Step 1: Parse SKILL.md
-        skill_md_path = skill_dir / "SKILL.md"
+        skill_md_path = SkillDiscovery._get_skill_md(skill_dir) or (skill_dir / "SKILL.md")
         parsed: ParsedSkill | None = None
         try:
             parsed = self.parser.parse(skill_md_path)

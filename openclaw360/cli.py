@@ -217,6 +217,19 @@ def cmd_rollback(args: argparse.Namespace) -> int:
 def cmd_scan_skills(args: argparse.Namespace) -> int:
     """Handle ``openclaw360 scan-skills`` — scan Skill directories for security risks."""
     try:
+        # Pre-backup if requested
+        if getattr(args, "pre_backup", False):
+            from openclaw360.backup import BackupManager, SkillInstallHook
+
+            config = _load_backup_config()
+            manager = BackupManager(config)
+            hook = SkillInstallHook(manager)
+            backup_result = hook.pre_install_backup("scan-skills")
+            if not backup_result.success:
+                print(f"安装前备份失败: {backup_result.error}", file=sys.stderr)
+                return 1
+            print(f"安装前备份完成: {backup_result.backup_id}")
+
         from openclaw360.skill_scanner import SkillScanner
 
         scanner = SkillScanner()
@@ -232,6 +245,9 @@ def cmd_scan_skills(args: argparse.Namespace) -> int:
         print(output)
         return 0
 
+    except PermissionError as exc:
+        print(f"错误: 权限不足 — {exc}\n请检查目录权限后重试。", file=sys.stderr)
+        return 1
     except Exception as exc:
         print(f"Error during skill scan: {exc}", file=sys.stderr)
         return 1
@@ -366,6 +382,191 @@ def cmd_check_output(args: argparse.Namespace) -> int:
         return 1
 
 
+# ------------------------------------------------------------------
+# Backup helpers and command handlers
+# ------------------------------------------------------------------
+
+
+def _load_backup_config() -> "BackupConfig":
+    """Load BackupConfig from the config dir or use defaults."""
+    from openclaw360.backup import BackupConfig
+
+    config_path = Path(os.path.expanduser(_DEFAULT_CONFIG_DIR)) / "backup_config.json"
+    if config_path.exists():
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+        return BackupConfig(**data)
+    return BackupConfig(
+        source_dir=os.path.expanduser("~/.openclaw360"),
+        backup_dir=os.path.expanduser("~/.openclaw360/backups"),
+    )
+
+
+def cmd_backup(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 backup`` — create a backup."""
+    try:
+        from openclaw360.backup import BackupManager
+
+        config = _load_backup_config()
+        manager = BackupManager(config)
+        result = manager.create_backup(tag=args.tag)
+
+        if result.success:
+            print(f"备份完成: {result.backup_id}")
+            return 0
+        else:
+            print(f"备份失败: {result.error}", file=sys.stderr)
+            return 1
+
+    except PermissionError as exc:
+        print(f"错误: 权限不足 — {exc}\n请检查目录权限后重试。", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"备份错误: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_restore(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 restore`` — restore from a backup."""
+    try:
+        from openclaw360.backup import BackupManager
+
+        config = _load_backup_config()
+        manager = BackupManager(config)
+        result = manager.restore_backup(args.backup_id)
+
+        if result.success:
+            print(f"恢复完成，共恢复 {result.restored_files} 个文件")
+            if result.pre_restore_backup_id:
+                print(f"恢复前备份: {result.pre_restore_backup_id}")
+            return 0
+        else:
+            print(f"恢复失败: {result.error}", file=sys.stderr)
+            return 1
+
+    except PermissionError as exc:
+        print(f"错误: 权限不足 — {exc}\n请检查目录权限后重试。", file=sys.stderr)
+        return 1
+    except FileNotFoundError:
+        print(f"错误: 备份不存在 — {args.backup_id}", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"恢复错误: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_backup_list(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 backup-list`` — list backups."""
+    try:
+        from openclaw360.backup import BackupManager, BackupTrigger
+
+        config = _load_backup_config()
+        manager = BackupManager(config)
+
+        trigger_filter = None
+        if args.trigger:
+            trigger_filter = BackupTrigger(args.trigger)
+
+        backups = manager.list_backups(limit=args.limit, trigger_filter=trigger_filter)
+
+        if not backups:
+            print("没有找到备份。")
+            return 0
+
+        # Table header
+        print(f"{'BACKUP_ID':<45} {'CREATED_AT':<22} {'TRIGGER':<14} {'TAG':<20} {'FILES':>6} {'SIZE':>12}")
+        print("-" * 125)
+
+        for b in backups:
+            size_str = _format_size(b.total_size)
+            print(
+                f"{b.backup_id:<45} {b.created_at:<22} {b.trigger.value:<14} "
+                f"{b.tag:<20} {b.file_count:>6} {size_str:>12}"
+            )
+
+        print(f"\n共 {len(backups)} 个备份")
+        return 0
+
+    except PermissionError as exc:
+        print(f"错误: 权限不足 — {exc}\n请检查目录权限后重试。", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"列表错误: {exc}", file=sys.stderr)
+        return 1
+
+
+def _format_size(size_bytes: int) -> str:
+    """Format byte size into human-readable string."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    else:
+        return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+
+
+def cmd_backup_verify(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 backup-verify`` — verify backup integrity."""
+    try:
+        from openclaw360.backup import BackupManager
+
+        config = _load_backup_config()
+        manager = BackupManager(config)
+        result = manager.verify_backup(args.backup_id)
+
+        if result.valid:
+            print(f"✅ 备份校验通过: {args.backup_id}")
+            print(f"   已检查文件: {result.checked_files}")
+            if result.signature_valid:
+                print("   签名验证: 通过")
+        else:
+            print(f"❌ 备份校验失败: {args.backup_id}")
+            if result.corrupted_files:
+                print(f"   损坏文件: {', '.join(result.corrupted_files)}")
+            if not result.signature_valid:
+                print("   签名验证: 失败")
+            if result.message:
+                print(f"   详情: {result.message}")
+            return 1
+
+        return 0
+
+    except PermissionError as exc:
+        print(f"错误: 权限不足 — {exc}\n请检查目录权限后重试。", file=sys.stderr)
+        return 1
+    except FileNotFoundError:
+        print(f"错误: 备份不存在 — {args.backup_id}", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"校验错误: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_backup_clean(args: argparse.Namespace) -> int:
+    """Handle ``openclaw360 backup-clean`` — run cleanup."""
+    try:
+        from openclaw360.backup import BackupManager
+
+        config = _load_backup_config()
+        manager = BackupManager(config)
+        result = manager.cleanup()
+
+        freed_str = _format_size(result.freed_bytes)
+        print(f"清理完成:")
+        print(f"  已删除: {result.deleted_count} 个备份")
+        print(f"  释放空间: {freed_str}")
+        print(f"  剩余备份: {result.remaining_count} 个")
+        return 0
+
+    except PermissionError as exc:
+        print(f"错误: 权限不足 — {exc}\n请检查目录权限后重试。", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"清理错误: {exc}", file=sys.stderr)
+        return 1
+
+
 
 
 # ------------------------------------------------------------------
@@ -416,6 +617,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format (default: text)")
     scan_parser.add_argument("--min-score", type=int, default=None, help="Only report Skills with score below this value")
     scan_parser.add_argument("--lang", choices=["en", "zh"], default="en", help="Report language (default: en)")
+    scan_parser.add_argument("--pre-backup", action="store_true", default=False, help="Create a backup before scanning")
 
     # check-prompt
     cp_parser = subparsers.add_parser("check-prompt", help="Check if a prompt is safe (injection detection)")
@@ -433,6 +635,31 @@ def build_parser() -> argparse.ArgumentParser:
     co_parser = subparsers.add_parser("check-output", help="Check if output leaks sensitive data (DLP)")
     co_parser.add_argument("text", help="The output text to check")
     co_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
+
+    # backup
+    backup_parser = subparsers.add_parser("backup", help="Create a backup of the configuration directory")
+    backup_parser.add_argument("--tag", default="", help="Optional tag for the backup")
+
+    # restore
+    restore_parser = subparsers.add_parser("restore", help="Restore from a backup")
+    restore_parser.add_argument("backup_id", help="Backup ID to restore from")
+
+    # backup-list
+    bl_parser = subparsers.add_parser("backup-list", help="List available backups")
+    bl_parser.add_argument("--limit", type=int, default=20, help="Maximum number of backups to show (default: 20)")
+    bl_parser.add_argument(
+        "--trigger",
+        choices=["manual", "scheduled", "pre_install", "pre_restore"],
+        default=None,
+        help="Filter by trigger type",
+    )
+
+    # backup-verify
+    bv_parser = subparsers.add_parser("backup-verify", help="Verify backup integrity")
+    bv_parser.add_argument("backup_id", help="Backup ID to verify")
+
+    # backup-clean
+    subparsers.add_parser("backup-clean", help="Run backup cleanup based on retention policy")
 
     return parser
 
@@ -462,6 +689,11 @@ def main(argv: list[str] | None = None) -> int:
         "check-prompt": cmd_check_prompt,
         "check-tool": cmd_check_tool,
         "check-output": cmd_check_output,
+        "backup": cmd_backup,
+        "restore": cmd_restore,
+        "backup-list": cmd_backup_list,
+        "backup-verify": cmd_backup_verify,
+        "backup-clean": cmd_backup_clean,
     }
 
     handler = handlers.get(args.command)

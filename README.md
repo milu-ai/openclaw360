@@ -1,6 +1,8 @@
 # 🛡️ OpenClaw360
 
-AI Agent 运行时安全防护框架。以 Skill 形式无缝集成到 [OpenClaw](https://github.com/openclaw/openclaw)、[Qclaw](https://qclaw.app) 等 AI Agent 客户端，用户无需修改任何业务代码即可为 Agent 添加全方位安全防护。
+护虾崽周全 🦐
+
+AI Agent 运行时安全防护框架。以 Skill 形式无缝集成到 [OpenClaw](https://github.com/openclaw/openclaw)、[Qclaw](https://qclaw.app) 等 AI Agent 客户端，用户无需修改任何业务代码即可为 Agent 添加全方位安全防护。五层防护，零知识审计，一键复活虾崽，PIPL 合规就绪。
 
 ## 为什么需要 OpenClaw360
 
@@ -17,6 +19,7 @@ graph TD
     B --> G["Audit Logger<br/>Ed25519 签名审计日志"]
     D --> G
     F --> G
+    G --> H["Backup & Restore<br/>· 原子备份/恢复<br/>· Ed25519 签名验证<br/>· 智能清理策略"]
 ```
 
 ## 核心能力
@@ -309,6 +312,40 @@ openclaw360 scan-skills [path] [--format {json,text}] [--min-score N] [--lang {e
   --lang {en,zh}        报告语言（默认 en，中文用 zh）
 ```
 
+### 8. 一键备份恢复
+
+原子备份与恢复系统，虾崽养死了也能迅速复活 🦐
+
+- 原子快照：对 `~/.openclaw360/` 目录创建完整快照，包含配置、身份密钥、审计日志、规则库
+- Ed25519 签名验证：Manifest 文件使用 Ed25519 签名，确保备份完整性不可篡改
+- 安装前自动备份：安装新 Skill 前自动创建备份（`--pre-backup` 参数），出问题可一键回滚
+- 智能清理策略：按优先级保留关键备份（手动 > 安装前 > 定时），自动清理过期备份释放空间
+- 恢复前保护：恢复操作前自动创建当前状态备份，防止误操作
+
+```python
+from openclaw360.backup import BackupManager, BackupConfig
+
+config = BackupConfig(
+    source_dir="~/.openclaw360",
+    backup_dir="~/.openclaw360/backups",
+)
+manager = BackupManager(config)
+
+# 创建备份
+result = manager.create_backup(tag="before-upgrade")
+print(result.backup_id)  # 2026-03-12T10:30:00_manual_before-upgrade
+
+# 恢复备份
+manager.restore_backup(result.backup_id)
+
+# 验证备份完整性
+verify = manager.verify_backup(result.backup_id)
+print(verify.valid)  # True
+
+# 清理过期备份
+manager.cleanup()
+```
+
 ## 安装
 
 ```bash
@@ -353,6 +390,11 @@ openclaw360 check-output "输出文本"        # 检测敏感数据泄露
 openclaw360 scan-skills [path] [--lang zh|en] [--format json|text] [--min-score N]  # 扫描 Skill 安全
 openclaw360 audit --agent-id <id>         # 查询审计日志
 openclaw360 report --agent-id <id>        # 生成审计报告
+openclaw360 backup [--tag <标签>]          # 创建配置备份
+openclaw360 restore <backup_id>           # 从备份恢复（恢复前自动备份当前状态）
+openclaw360 backup-list [--limit N] [--trigger manual|scheduled|pre_install]  # 列出所有备份
+openclaw360 backup-verify <backup_id>     # 验证备份完整性（Ed25519 签名 + 文件哈希）
+openclaw360 backup-clean                  # 智能清理过期备份
 openclaw360 update                        # 检查并更新安全规则
 openclaw360 rollback <version>            # 回滚规则到指定版本
 ```
@@ -434,6 +476,25 @@ openclaw360 scan-skills /path/to/skills --format json --lang zh
 openclaw360 scan-skills --min-score 60 --lang zh
 ```
 
+### 备份恢复
+
+```bash
+# 创建备份（带标签）
+openclaw360 backup --tag before-upgrade
+
+# 列出所有备份
+openclaw360 backup-list
+
+# 验证备份完整性
+openclaw360 backup-verify <backup_id>
+
+# 从备份恢复（恢复前自动备份当前状态）
+openclaw360 restore <backup_id>
+
+# 清理过期备份
+openclaw360 backup-clean
+```
+
 ## 配置
 
 ```python
@@ -498,6 +559,8 @@ cp SKILL.md ~/.openclaw/workspace/skills/openclaw360/SKILL.md
 | 身份密钥文件损坏 | 生成新密钥对，旧身份标记 revoked | 新身份自动关联 |
 | 审计日志磁盘写入失败 | 内存队列缓存（最大 1000 条） | 磁盘恢复后批量写入 |
 | Hook 执行超过 500ms | 返回 ALLOW + timeout=True | 后台异步完成检测并记录 |
+| 备份签名验证失败 | 拒绝恢复，提示备份可能被篡改 | 使用其他有效备份恢复 |
+| 备份目录空间不足 | 自动触发清理策略释放空间 | 清理后重试备份 |
 
 ## 开发
 

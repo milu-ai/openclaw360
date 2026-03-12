@@ -463,7 +463,7 @@
       <img src="logo.svg" alt="OpenClaw360 Logo" class="hero-logo theme-logo">
       <h1>OpenClaw360</h1>
       <p style="font-size:18px; color:var(--text-dim); margin-bottom:12px; letter-spacing:2px;">护虾崽周全 🦐</p>
-      <p>AI Agent 运行时安全防护框架。四层防护，零代码集成，PIPL 合规就绪。</p>
+      <p>AI Agent 运行时安全防护框架。五层防护，零知识审计，一键复活虾崽，PIPL 合规就绪。</p>
       <p class="compat">兼容 <a href="https://github.com/openclaw/openclaw" target="_blank">OpenClaw</a>、<a href="https://qclaw.app" target="_blank">Qclaw</a> 等主流 AI Agent 客户端</p>
       <div class="install-box" onclick="copyInstall()" id="installBox">
         <span class="prompt">$</span>
@@ -476,7 +476,7 @@
   <!-- Stats -->
   <div class="stats">
     <div class="stat">
-      <div class="stat-num">568</div>
+      <div class="stat-num">638</div>
       <div class="stat-label">测试用例</div>
     </div>
     <div class="stat">
@@ -496,8 +496,8 @@
   <!-- Features -->
   <section id="features">
     <div class="container">
-      <div class="section-title">四层安全防护</div>
-      <div class="section-sub">通过 Hook 机制拦截 Agent 生命周期中的关键节点，无需修改业务代码</div>
+      <div class="section-title">五层安全防护</div>
+      <div class="section-sub">通过 Hook 机制拦截 Agent 生命周期中的关键节点，无需修改业务代码。内置备份系统，虾崽养死了也能迅速复活。</div>
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon">🔍</div>
@@ -522,6 +522,18 @@
           <h3>Skill 安全扫描器</h3>
           <p>6 个专用检查器对第三方 Skill 进行静态安全分析。上下文感知评分，智能区分文档示例与真实凭证。支持 CI/CD 集成。</p>
           <span class="feature-tag tag-scanner">scan-skills</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💾</div>
+          <h3>一键备份恢复</h3>
+          <p>原子备份与恢复，Ed25519 签名保护 Manifest 完整性。智能清理策略按优先级保留关键备份。安装新 Skill 前自动备份，虾崽养死了也能迅速复活。</p>
+          <span class="feature-tag tag-scanner">backup · restore</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🕵️</div>
+          <h3>零知识审计日志</h3>
+          <p>所有安全事件使用 SHA-256 哈希记录，敏感数据零知识存储。Ed25519 签名确保日志不可篡改。支持按 Agent、时间、决策类型查询和生成报告。</p>
+          <span class="feature-tag tag-engine">audit · report</span>
         </div>
       </div>
     </div>
@@ -714,6 +726,22 @@ result = guard.on_output(<span class="str">"API key: sk-abc123def456ghi789jkl012
         <div class="cli-item">
           <code>openclaw360 audit --agent-id &lt;id&gt;</code>
           <span>查询审计日志</span>
+        </div>
+        <div class="cli-item">
+          <code>openclaw360 backup --tag &lt;标签&gt;</code>
+          <span>创建配置备份</span>
+        </div>
+        <div class="cli-item">
+          <code>openclaw360 restore &lt;backup_id&gt;</code>
+          <span>从备份恢复</span>
+        </div>
+        <div class="cli-item">
+          <code>openclaw360 backup-list</code>
+          <span>列出所有备份</span>
+        </div>
+        <div class="cli-item">
+          <code>openclaw360 backup-verify &lt;backup_id&gt;</code>
+          <span>校验备份完整性</span>
         </div>
       </div>
     </div>

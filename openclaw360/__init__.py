@@ -1,5 +1,14 @@
 """OpenClaw360 — runtime security skill for AI Agent frameworks."""
 
+from openclaw360.backup import (
+    BackupConfig,
+    BackupManager,
+    BackupResult,
+    BackupTrigger,
+    CleanupResult,
+    RestoreResult,
+    VerifyResult,
+)
 from openclaw360.config import GuardConfig
 from openclaw360.models import (
     Decision,
@@ -20,4 +29,11 @@ __all__ = [
     "ThreatType",
     "ThreatDetection",
     "RiskScore",
+    "BackupManager",
+    "BackupConfig",
+    "BackupResult",
+    "RestoreResult",
+    "VerifyResult",
+    "CleanupResult",
+    "BackupTrigger",
 ]

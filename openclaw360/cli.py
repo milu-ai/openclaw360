@@ -613,7 +613,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # scan-skills
     scan_parser = subparsers.add_parser("scan-skills", help="Scan Skill directories for security risks")
-    scan_parser.add_argument("path", nargs="?", default=None, help="Path to scan (default: ~/.openclaw/skills/ and ./skills/)")
+    scan_parser.add_argument("path", nargs="?", default=None, help="Path to scan (default: ~/.openclaw/skills/ [OpenClaw platform Skill directory] and ./skills/)")
     scan_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format (default: text)")
     scan_parser.add_argument("--min-score", type=int, default=None, help="Only report Skills with score below this value")
     scan_parser.add_argument("--lang", choices=["en", "zh"], default="en", help="Report language (default: en)")

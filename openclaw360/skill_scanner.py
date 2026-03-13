@@ -379,6 +379,7 @@ class SkillMDParser:
 class SkillDiscovery:
     """Skill directory discovery and traversal."""
 
+    # ~/.openclaw/skills/ is the OpenClaw platform Skill directory (not openclaw360's own ~/.openclaw360/)
     DEFAULT_PATHS = [
         "~/.openclaw/skills/",
         "<workspace>/skills/",
@@ -388,7 +389,7 @@ class SkillDiscovery:
         """Discover all Skill directories.
 
         When *paths* is ``None``, the default scan locations are used:
-        ``~/.openclaw/skills/`` and ``<cwd>/skills/``.
+        ``~/.openclaw/skills/`` (OpenClaw platform Skill directory) and ``<cwd>/skills/``.
 
         Discovery logic (for each base path):
         1. If the base path itself contains ``SKILL.md``, treat it as a single Skill.
@@ -405,6 +406,7 @@ class SkillDiscovery:
             ScanError: If a specified path does not exist or is not a directory.
         """
         if paths is None:
+            # ~/.openclaw/skills/ is the OpenClaw platform Skill directory, not openclaw360's own dir
             resolved_paths = [
                 os.path.expanduser("~/.openclaw/skills/"),
                 os.path.join(os.getcwd(), "skills/"),

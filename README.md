@@ -158,7 +158,7 @@ deductions: critical=25, high=15, medium=8, low=3, info=0
 
 ```bash
 # 不指定路径时，自动扫描默认目录：
-#   ~/.openclaw/skills/
+#   ~/.openclaw/skills/    ← OpenClaw 平台 Skill 安装目录（非 openclaw360 自身目录 ~/.openclaw360/）
 #   ./skills/（当前工作目录下）
 openclaw360 scan-skills
 
@@ -256,7 +256,7 @@ cp -r /tmp/cool-skill /tmp/scan-target/cool-skill
 # 3. 扫描
 openclaw360 scan-skills /tmp/scan-target
 
-# 4. 如果评分满意，再安装到 OpenClaw
+# 4. 如果评分满意，再安装到 OpenClaw 平台 Skill 目录（非 openclaw360 自身目录 ~/.openclaw360/）
 cp -r /tmp/cool-skill ~/.openclaw/skills/cool-skill
 ```
 
@@ -304,7 +304,7 @@ for result in report.results:
 openclaw360 scan-skills [path] [--format {json,text}] [--min-score N] [--lang {en,zh}]
 
 位置参数:
-  path                  扫描路径（可选，默认扫描 ~/.openclaw/skills/ 和 ./skills/）
+  path                  扫描路径（可选，默认扫描 ~/.openclaw/skills/ [OpenClaw 平台 Skill 目录] 和 ./skills/）
 
 选项:
   --format {json,text}  输出格式（默认 text）

@@ -1,7 +1,7 @@
 ---
 name: openclaw360
 description: Runtime security skill for AI agents — prompt injection detection, tool call authorization, sensitive data leak prevention, skill security scanning, and one-click backup & restore
-version: 0.1.9
+version: 0.1.10
 disable-model-invocation: true
 homepage: https://github.com/milu-ai/openclaw360
 install:

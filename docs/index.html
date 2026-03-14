@@ -476,7 +476,7 @@
   <!-- Stats -->
   <div class="stats">
     <div class="stat">
-      <div class="stat-num">638</div>
+      <div class="stat-num">620</div>
       <div class="stat-label">测试用例</div>
     </div>
     <div class="stat">
@@ -516,6 +516,12 @@
           <h3>DLP 数据防泄露</h3>
           <p>检测 13 类敏感数据，覆盖技术凭证和 PIPL 个人信息。零知识日志（SHA-256 哈希），自动脱敏。输入输出双向检测。</p>
           <span class="feature-tag tag-dlp">on_prompt + on_output</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>主动防护模式</h3>
+          <p>Agent 在三个关键节点（输入/工具调用/输出）主动调用安全检查 CLI 命令，无需 OpenClaw 框架钩子集成即可实现运行时防护。支持 BLOCK/CONFIRM/ALLOW 三级决策和降级处理。</p>
+          <span class="feature-tag tag-critical">check-prompt · check-tool · check-output</span>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🔬</div>

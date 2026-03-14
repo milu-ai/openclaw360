@@ -121,7 +121,17 @@ AI-RBAC 权限控制：基于 agent_id 的工具级权限管理，RBAC 检查失
 
 所有 Hook 有 500ms 超时限制。超时后立即返回 ALLOW 放行（`metadata.timeout=True`），不阻塞 Agent 运行。实际检查在后台线程继续执行并记录结果到审计日志。
 
-### 7. Skill 安全扫描器
+### 7. 主动防护模式
+
+无需等待 OpenClaw 框架钩子集成，Agent 可在三个关键节点主动调用安全检查 CLI 命令实现运行时防护：
+
+- **输入检查**：收到用户消息时，调用 `check-prompt` 检测注入攻击
+- **工具调用检查**：每次调用工具前，调用 `check-tool` 评估风险等级
+- **输出检查**：返回结果前，调用 `check-output` 检测敏感数据泄露
+
+三级决策处理：BLOCK（停止并通知）、CONFIRM（暂停等待用户确认）、ALLOW（继续执行）。命令失败时自动降级，不阻塞用户操作。
+
+### 8. Skill 安全扫描器
 
 对第三方 Agent Skill 进行静态安全扫描，在安装前识别潜在风险。
 
@@ -312,7 +322,7 @@ openclaw360 scan-skills [path] [--format {json,text}] [--min-score N] [--lang {e
   --lang {en,zh}        报告语言（默认 en，中文用 zh）
 ```
 
-### 8. 一键备份恢复
+### 9. 一键备份恢复
 
 原子备份与恢复系统，虾崽养死了也能迅速复活 🦐
 

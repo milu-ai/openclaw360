@@ -1,7 +1,7 @@
 ---
 name: openclaw360
 description: Runtime security skill for AI agents — prompt injection detection, tool call authorization, sensitive data leak prevention, skill security scanning, and one-click backup & restore
-version: 0.1.10
+version: 0.1.11
 disable-model-invocation: true
 homepage: https://github.com/milu-ai/openclaw360
 install:
@@ -101,9 +101,9 @@ OpenClaw360 为 AI Agent 提供五层安全防护：提示词注入检测、工�
 - `openclaw360 report --agent-id <id>` — 生成审计报告
 - `openclaw360 backup [--tag <标签>]` — 创建配置备份
 - `openclaw360 restore <backup_id>` — 从备份恢复（恢复前自动备份当前状态）
-- `openclaw360 backup-list [--limit N] [--trigger manual|scheduled|pre_install]` — 列出所有备份
+- `openclaw360 backup-list [--limit N] [--trigger manual|scheduled|pre_install|pre_restore]` — 列出所有备份
 - `openclaw360 backup-verify <backup_id>` — 验证备份完整性
-- `openclaw360 backup-clean` — 智能清理过期备份
+- `openclaw360 backup-clean [--dry-run]` — 智能清理过期备份（--dry-run 预览不删除）
 
 ### 主动防护模式
 

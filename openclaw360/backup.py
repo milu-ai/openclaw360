@@ -647,11 +647,14 @@ class BackupManager:
 
     # -- cleanup -------------------------------------------------------------
 
-    def cleanup(self) -> CleanupResult:
+    def cleanup(self, dry_run: bool = False) -> CleanupResult:
         """Clean up backups based on retention policy.
 
         Priority-based deletion: SCHEDULED(0) > MANUAL(1) > PRE_INSTALL(2) > PRE_RESTORE(3)
         Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6
+
+        Args:
+            dry_run: If True, compute what would be deleted without actually deleting.
         """
         backups = self.store.list_all()
         original_count = len(backups)
@@ -693,15 +696,17 @@ class BackupManager:
             to_delete.append(victim.backup_id)
             total_size -= victim.total_size
 
-        # Execute deletions
+        # Execute deletions (skip if dry_run)
         deleted_count = 0
         freed_bytes = 0
         for backup_id in to_delete:
-            # Find the backup's size for freed_bytes tracking
             matching = [b for b in backups if b.backup_id == backup_id]
             if matching:
                 freed_bytes += matching[0].total_size
-            if self.store.delete(backup_id):
+            if not dry_run:
+                if self.store.delete(backup_id):
+                    deleted_count += 1
+            else:
                 deleted_count += 1
 
         remaining_count = original_count - deleted_count

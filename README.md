@@ -402,9 +402,9 @@ openclaw360 audit --agent-id <id>         # 查询审计日志
 openclaw360 report --agent-id <id>        # 生成审计报告
 openclaw360 backup [--tag <标签>]          # 创建配置备份
 openclaw360 restore <backup_id>           # 从备份恢复（恢复前自动备份当前状态）
-openclaw360 backup-list [--limit N] [--trigger manual|scheduled|pre_install]  # 列出所有备份
+openclaw360 backup-list [--limit N] [--trigger manual|scheduled|pre_install|pre_restore]  # 列出所有备份
 openclaw360 backup-verify <backup_id>     # 验证备份完整性（Ed25519 签名 + 文件哈希）
-openclaw360 backup-clean                  # 智能清理过期备份
+openclaw360 backup-clean [--dry-run]                  # 智能清理过期备份（--dry-run 预览）
 openclaw360 update                        # 检查并更新安全规则
 openclaw360 rollback <version>            # 回滚规则到指定版本
 ```

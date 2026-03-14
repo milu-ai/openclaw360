@@ -550,13 +550,20 @@ def cmd_backup_clean(args: argparse.Namespace) -> int:
 
         config = _load_backup_config()
         manager = BackupManager(config)
-        result = manager.cleanup()
+        dry_run = getattr(args, "dry_run", False)
+        result = manager.cleanup(dry_run=dry_run)
 
         freed_str = _format_size(result.freed_bytes)
-        print(f"清理完成:")
-        print(f"  已删除: {result.deleted_count} 个备份")
-        print(f"  释放空间: {freed_str}")
-        print(f"  剩余备份: {result.remaining_count} 个")
+        if dry_run:
+            print(f"预览（不会实际删除）:")
+            print(f"  将删除: {result.deleted_count} 个备份")
+            print(f"  将释放: {freed_str}")
+            print(f"  将剩余: {result.remaining_count} 个")
+        else:
+            print(f"清理完成:")
+            print(f"  已删除: {result.deleted_count} 个备份")
+            print(f"  释放空间: {freed_str}")
+            print(f"  剩余备份: {result.remaining_count} 个")
         return 0
 
     except PermissionError as exc:
@@ -659,7 +666,8 @@ def build_parser() -> argparse.ArgumentParser:
     bv_parser.add_argument("backup_id", help="Backup ID to verify")
 
     # backup-clean
-    subparsers.add_parser("backup-clean", help="Run backup cleanup based on retention policy")
+    bc_parser = subparsers.add_parser("backup-clean", help="Run backup cleanup based on retention policy")
+    bc_parser.add_argument("--dry-run", action="store_true", default=False, help="Preview what would be deleted without actually deleting")
 
     return parser
 
